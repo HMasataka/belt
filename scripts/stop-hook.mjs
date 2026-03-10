@@ -12,12 +12,8 @@ for await (const chunk of process.stdin) {
 
 const event = JSON.parse(input);
 
-// Always allow through for context_limit or user_abort
-if (
-  event.stop_hook_type === "context_limit" ||
-  event.stop_hook_type === "user_abort"
-) {
-  console.log(JSON.stringify({ decision: "allow" }));
+// Prevent infinite loop: if already continuing from a prior Stop hook, allow stop
+if (event.stop_hook_active) {
   process.exit(0);
 }
 
@@ -37,4 +33,5 @@ try {
   // No state file = not active
 }
 
-console.log(JSON.stringify({ decision: "allow" }));
+// Allow stop (empty output = approve)
+process.exit(0);
