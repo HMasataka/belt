@@ -1,7 +1,7 @@
-# belt:autopilot
-
-Autopilot workflow that takes a task through design, implementation, QA, and review.
-
+---
+name: autopilot
+description: Autopilot workflow that takes a task through design, implementation, QA, and review.
+argument-hint: "<task description>"
 ---
 
 ## Instructions
