@@ -1,7 +1,10 @@
 {
   "name": "belt",
   "version": "0.1.0",
-  "description": "Autopilot workflow plugin: design → implement → QA → review",
-  "skills": ["skills/autopilot"],
-  "mcpServers": ".mcp.json"
+  "description": "Minimal Claude Code plugin with autopilot workflow",
+  "author": {
+    "name": "HMasataka"
+  },
+  "repository": "https://github.com/HMasataka/belt",
+  "license": "MIT"
 }

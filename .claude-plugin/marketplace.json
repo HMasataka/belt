@@ -1,0 +1,13 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "belt",
+  "plugins": [
+    {
+      "name": "belt",
+      "version": "0.1.0",
+      "source": "./",
+      "category": "productivity",
+      "tags": ["autopilot", "multi-agent", "workflow"]
+    }
+  ]
+}

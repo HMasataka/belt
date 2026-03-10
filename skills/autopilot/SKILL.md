@@ -24,7 +24,7 @@ Use the Task tool to launch the architect agent:
 
 ```
 Task(
-  subagent_type="architect",
+  subagent_type="belt:architect",
   prompt="{user's original request}"
 )
 ```
@@ -41,7 +41,7 @@ Use the Task tool to launch the executor agent:
 
 ```
 Task(
-  subagent_type="executor",
+  subagent_type="belt:executor",
   prompt="{user's original request}\n\n{architect's plan from Phase 1}"
 )
 ```
@@ -74,7 +74,7 @@ Use the Task tool to launch the reviewer agent:
 
 ```
 Task(
-  subagent_type="reviewer",
+  subagent_type="belt:reviewer",
   prompt="{user's original request}\n\n{architect's plan from Phase 1}"
 )
 ```

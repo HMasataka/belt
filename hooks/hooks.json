@@ -2,8 +2,13 @@
   "hooks": {
     "Stop": [
       {
-        "type": "command",
-        "command": "node scripts/stop-hook.mjs"
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/stop-hook.mjs\""
+          }
+        ]
       }
     ]
   }

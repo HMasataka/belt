@@ -2,7 +2,7 @@
   "mcpServers": {
     "belt": {
       "command": "node",
-      "args": ["scripts/mcp-server.mjs"]
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/mcp-server.mjs"]
     }
   }
 }
