@@ -20,11 +20,14 @@ If no state exists or `active` is false, start from Phase 1.
 
 Call `mcp__belt__state_write` with `phase="architect"`, `status="running"`, `active=true`.
 
-Use the Task tool to launch a **Plan** subagent (subagent_type: "Plan") with the user's request.
-The subagent should:
+Use the Task tool to launch the architect agent:
 
-- Explore the codebase to understand existing architecture
-- Produce a structured implementation plan (summary, affected files, steps, risks)
+```
+Task(
+  subagent_type="architect",
+  prompt="{user's original request}"
+)
+```
 
 Save the plan output. Then call `mcp__belt__state_write` with `phase="architect"`, `status="done"`, `active=true`.
 
@@ -34,12 +37,14 @@ Save the plan output. Then call `mcp__belt__state_write` with `phase="architect"
 
 Call `mcp__belt__state_write` with `phase="executor"`, `status="running"`, `active=true`.
 
-Use the Task tool to launch a **general-purpose** subagent (subagent_type: "general-purpose") with:
+Use the Task tool to launch the executor agent:
 
-- The original user request
-- The architect's plan from Phase 1
-
-The subagent should implement the plan, writing code and making all necessary changes.
+```
+Task(
+  subagent_type="executor",
+  prompt="{user's original request}\n\n{architect's plan from Phase 1}"
+)
+```
 
 Then call `mcp__belt__state_write` with `phase="executor"`, `status="done"`, `active=true`.
 
@@ -65,11 +70,14 @@ On success, call `mcp__belt__state_write` with `phase="qa"`, `status="done"`, `a
 
 Call `mcp__belt__state_write` with `phase="reviewer"`, `status="running"`, `active=true`.
 
-Use the Task tool to launch an **Explore** subagent (subagent_type: "Explore") with instructions to:
+Use the Task tool to launch the reviewer agent:
 
-- Review all changes made during Phase 2
-- Check for correctness, code quality, security issues, and adherence to the plan
-- Produce a review summary with verdict (APPROVE / REQUEST_CHANGES)
+```
+Task(
+  subagent_type="reviewer",
+  prompt="{user's original request}\n\n{architect's plan from Phase 1}"
+)
+```
 
 If the verdict is REQUEST_CHANGES with critical issues, go back to Phase 2 to fix them (max 1 retry).
 
