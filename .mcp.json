@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "belt": {
+      "command": "node",
+      "args": ["scripts/mcp-server.mjs"]
+    }
+  }
+}
