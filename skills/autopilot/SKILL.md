@@ -8,6 +8,15 @@ argument-hint: "<タスクの説明>"
 
 belt のオートパイロットワークフローを実行する。以下の6フェーズを厳密な順序で実行すること。
 
+### 全体リトライ
+
+Phase 5 (QA) で2回リトライしても失敗した場合、Phase 1 からやり直す。全体リトライは最大2回まで。
+
+- 全体リトライ時は architect に失敗の根本原因を診断させ、その結果を `.belt/phases/qa-diagnosis.md` に保存する
+- `.belt/phases/` をクリアし（qa-diagnosis.md は残す）、state をリセットする
+- Phase 1 の analyst には元のリクエストに加えて QA 診断結果を渡す
+- 全体リトライ2回目も QA 失敗した場合、`active=false` で終了しユーザーに失敗を報告する
+
 ### フェーズ出力の永続化
 
 各フェーズの出力は `.belt/phases/` ディレクトリに Write ツールで保存する。これにより compact やセッション切断後もフェーズ出力を復元できる。
@@ -180,9 +189,26 @@ Task(
 )
 ```
 
-debugger の修正後、ビルドとテストを再実行する。合計最大3回までリトライ。
+debugger の修正後、ビルドとテストを再実行する。合計最大2回までリトライ。
 
-3回すべて失敗した場合、`mcp__belt__state_write` を `phase="qa"`, `status="error"`, `active=false` で呼び出し、ユーザーに失敗を報告する。
+2回すべて失敗した場合、全体リトライを試みる:
+
+1. architect に失敗の根本原因を診断させる:
+
+```text
+Task(
+  subagent_type="belt:architect",
+  prompt="QA が繰り返し失敗しました。根本原因を診断し、次の実装サイクルへの改善提案を出力してください。\n\n## エラー出力\n{直近のエラー出力}\n\n## 作業計画\n{Phase 2 の planner 計画}"
+)
+```
+
+1. 診断結果を Write ツールで `.belt/phases/qa-diagnosis.md` に保存する
+1. 全体リトライ回数が2回未満の場合:
+   - Bash ツールで `.belt/phases/` 内の `qa-diagnosis.md` 以外のファイルを削除する
+   - `mcp__belt__state_write` を `phase="analyst"`, `status="running"`, `active=true` で呼び出す
+   - Phase 1 に戻る。analyst には元のリクエストに加えて `.belt/phases/qa-diagnosis.md` の内容を渡す
+1. 全体リトライ回数が2回に達した場合:
+   - `mcp__belt__state_write` を `phase="qa"`, `status="error"`, `active=false` で呼び出し、ユーザーに失敗と診断結果を報告する
 
 成功した場合、`mcp__belt__state_write` を `phase="qa"`, `status="done"`, `active=true` で呼び出す。
 
