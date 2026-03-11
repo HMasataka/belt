@@ -8,11 +8,33 @@ argument-hint: "<タスクの説明>"
 
 belt のオートパイロットワークフローを実行する。以下の6フェーズを厳密な順序で実行すること。
 
+### フェーズ出力の永続化
+
+各フェーズの出力は `.belt/phases/` ディレクトリに Write ツールで保存する。これにより compact やセッション切断後もフェーズ出力を復元できる。
+
+保存先:
+
+- `.belt/phases/analyst.md` — Phase 1 の出力
+- `.belt/phases/architect.md` — Phase 2 Step 1 の出力
+- `.belt/phases/planner.md` — Phase 2 Step 2 の出力
+- `.belt/phases/critic.md` — Phase 3 の出力
+
+後続フェーズでは、会話コンテキストに前フェーズの出力がない場合（compact 後など）、Read ツールでこれらのファイルから読み込んで使用する。
+
 ### 起動: レジュームチェック
 
 まず `mcp__belt__state_read` を呼び出して前回の進捗を確認する。
-履歴にフェーズの `"status": "done"` がある場合、そのフェーズをスキップし次の未完了フェーズから続行する。
-状態が存在しないか `active` が false の場合、Phase 1 から開始する。
+
+**新規開始** (状態が存在しないか `active` が false の場合):
+
+- Bash ツールで `rm -rf .belt/phases/` を実行し、前回のフェーズ出力をクリアする
+- Phase 1 から開始する
+
+**レジューム** (`active` が true の場合):
+
+- `.belt/phases/` のファイルはクリアしない
+- 完了済みフェーズの出力を Read ツールで `.belt/phases/` から読み込み、後続フェーズのコンテキストとして使用する
+- 履歴にフェーズの `"status": "done"` がある場合、そのフェーズをスキップし次の未完了フェーズから続行する
 
 ---
 
@@ -29,7 +51,7 @@ Task(
 )
 ```
 
-分析出力（ギャップ、ガードレール、エッジケース、受け入れ基準）を保存する。
+分析出力（ギャップ、ガードレール、エッジケース、受け入れ基準）を Write ツールで `.belt/phases/analyst.md` に保存する。
 その後 `mcp__belt__state_write` を `phase="analyst"`, `status="done"`, `active=true` で呼び出す。
 
 ---
@@ -47,6 +69,8 @@ Task(
 )
 ```
 
+architect の出力を Write ツールで `.belt/phases/architect.md` に保存する。
+
 #### Step 2: 作業計画の作成
 
 ```text
@@ -56,7 +80,7 @@ Task(
 )
 ```
 
-作業計画を保存する。その後 `mcp__belt__state_write` を `phase="design"`, `status="done"`, `active=true` で呼び出す。
+作業計画を Write ツールで `.belt/phases/planner.md` に保存する。その後 `mcp__belt__state_write` を `phase="design"`, `status="done"`, `active=true` で呼び出す。
 
 ---
 
@@ -80,7 +104,7 @@ Task(
 
 - 続行するが、留保事項を追加コンテキストとして executor に渡す。
 
-その後 `mcp__belt__state_write` を `phase="critic"`, `status="done"`, `active=true` で呼び出す。
+critic の出力を Write ツールで `.belt/phases/critic.md` に保存する。その後 `mcp__belt__state_write` を `phase="critic"`, `status="done"`, `active=true` で呼び出す。
 
 ---
 
