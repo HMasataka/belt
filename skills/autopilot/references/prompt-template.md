@@ -6,6 +6,10 @@
 
 ---
 
+## 変数の初期化
+
+- `iteration = 0` — エージェント起動のたびに +1 する（scout 含む全エージェント）
+
 ## ファイル命名規則
 
 全ファイルにイテレーション番号 `-i{iteration}` を付与する。エージェント起動のたびに iteration を +1 する。
@@ -24,6 +28,55 @@ outputs/critic-i8.md     ← 再レビュー
 ```
 
 **参照追跡:** 各エージェント完了後、`latest_{name}` を更新する。後続エージェントの参照にはファイル名ではなく `latest_{name}` を使い、オーケストレーターが実際のファイルパスに解決する。
+
+---
+
+## ステータスタグによるルーティング
+
+サブエージェントは出力の最終行にステータスタグを出力する。オーケストレーターはタグで機械的にルーティングする（自然言語の判定文は参考にしない）。複数タグがある場合は最後のタグを採用する。
+
+**Critic:**
+
+- `[STATUS:ACCEPT]` → Phase 4 に進む
+- `[STATUS:REVISE]` → Phase 4 に進む（留保事項を executor に渡す）
+- `[STATUS:REJECT]` → planner をリトライ
+
+**Reviewer / Security Reviewer / AI Antipattern Reviewer:**
+
+- `[STATUS:APPROVE]` → 完了に進む
+- `[STATUS:REQUEST_CHANGES]` → Phase 4 をリトライ
+- `[STATUS:COMMENT]` → 完了に進む（サマリーに含める）
+
+---
+
+## finding_id による指摘追跡
+
+Phase 6 のレビューアは各指摘に一意の finding_id（`F-001`, `F-002`, ...）を付与する。リトライ時、レビューアは前回の出力を参照し、各 finding_id を追跡する:
+
+- `new` — 今回新たに検出
+- `persists` — 前回指摘し、未修正
+- `resolved` — 前回指摘し、修正済み
+
+同じ問題の堂々巡りを防ぎ、修正漏れを可視化する。
+
+---
+
+## 通常エージェント
+
+3ステップで実行:
+
+1. **プロンプト構築**: テンプレートに従い Write ツールで `prompts/{name}-i{iteration}.md` を作成
+2. **サブエージェント起動**: 最小 Task prompt で起動（下記参照）
+3. **ルーティング**: 戻り値のステータスタグで次の遷移を判定
+
+各フェーズの「プロンプト仕様」に記載された変数をテンプレートに埋め込む。
+
+## Scout エージェント（例外）
+
+Scout は `disallowedTools: Write` のためテンプレートを使わない。
+
+- Task prompt にリクエストをインラインで渡す
+- 戻り値をオーケストレーターが `.belt/phases/outputs/scout-{type}-i{iteration}.md` に Write で保存する
 
 ---
 
@@ -84,12 +137,3 @@ Task(
   prompt="`.belt/phases/prompts/executor-g{G}t{T}-i{iteration}.md` を Read ツールで読み、指示に従ってください。作業結果を `.belt/phases/outputs/executor-g{G}t{T}-i{iteration}.md` に Write ツールで保存してください。"
 )
 ```
-
----
-
-## Scout エージェント（例外）
-
-Scout は `disallowedTools: Write` のためテンプレートを使わない。
-
-- Task prompt にリクエストをインラインで渡す
-- 戻り値をオーケストレーターが `.belt/phases/outputs/scout-{type}-i{iteration}.md` に Write で保存する
