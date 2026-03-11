@@ -1,190 +1,210 @@
 ---
 name: autopilot
-description: Autopilot workflow that takes a task through analysis, design, planning, implementation, QA, and review.
-argument-hint: "<task description>"
+description: 分析・設計・計画・実装・QA・レビューを通すオートパイロットワークフロー
+argument-hint: "<タスクの説明>"
 ---
 
-## Instructions
+## 手順
 
-You are running the belt autopilot workflow. Follow the 6 phases below in strict order.
+belt のオートパイロットワークフローを実行する。以下の6フェーズを厳密な順序で実行すること。
 
-### Startup: Resume Check
+### 起動: レジュームチェック
 
-First, call `mcp__belt__state_read` to check for previous progress.
-If a phase shows `"status": "done"` in the history, skip it and continue from the next incomplete phase.
-If no state exists or `active` is false, start from Phase 1.
+まず `mcp__belt__state_read` を呼び出して前回の進捗を確認する。
+履歴にフェーズの `"status": "done"` がある場合、そのフェーズをスキップし次の未完了フェーズから続行する。
+状態が存在しないか `active` が false の場合、Phase 1 から開始する。
 
 ---
 
-### Phase 1: Requirements Analysis (Analyst)
+### Phase 1: 要件分析 (Analyst)
 
-Call `mcp__belt__state_write` with `phase="analyst"`, `status="running"`, `active=true`.
+`mcp__belt__state_write` を `phase="analyst"`, `status="running"`, `active=true` で呼び出す。
 
-Use the Task tool to launch the analyst agent:
+Task ツールで analyst エージェントを起動する:
 
-```
+```text
 Task(
   subagent_type="belt:analyst",
-  prompt="{user's original request}"
+  prompt="{ユーザーの元のリクエスト}"
 )
 ```
 
-Save the analysis output (gaps, guardrails, edge cases, acceptance criteria).
-Then call `mcp__belt__state_write` with `phase="analyst"`, `status="done"`, `active=true`.
+分析出力（ギャップ、ガードレール、エッジケース、受け入れ基準）を保存する。
+その後 `mcp__belt__state_write` を `phase="analyst"`, `status="done"`, `active=true` で呼び出す。
 
 ---
 
-### Phase 2: Design & Planning (Architect → Planner)
+### Phase 2: 設計・計画 (Architect → Planner)
 
-Call `mcp__belt__state_write` with `phase="design"`, `status="running"`, `active=true`.
+`mcp__belt__state_write` を `phase="design"`, `status="running"`, `active=true` で呼び出す。
 
-**Step 1: Architecture Analysis**
+#### Step 1: アーキテクチャ分析
 
-```
+```text
 Task(
   subagent_type="belt:architect",
-  prompt="{user's original request}\n\n## Analyst Output\n{analyst's output from Phase 1}"
+  prompt="{ユーザーの元のリクエスト}\n\n## Analyst 出力\n{Phase 1 の analyst 出力}"
 )
 ```
 
-**Step 2: Work Plan Creation**
+#### Step 2: 作業計画の作成
 
-```
+```text
 Task(
   subagent_type="belt:planner",
-  prompt="{user's original request}\n\n## Analyst Output\n{analyst's output from Phase 1}\n\n## Architecture Analysis\n{architect's output from Step 1}"
+  prompt="{ユーザーの元のリクエスト}\n\n## Analyst 出力\n{Phase 1 の analyst 出力}\n\n## アーキテクチャ分析\n{Step 1 の architect 出力}"
 )
 ```
 
-Save the work plan. Then call `mcp__belt__state_write` with `phase="design"`, `status="done"`, `active=true`.
+作業計画を保存する。その後 `mcp__belt__state_write` を `phase="design"`, `status="done"`, `active=true` で呼び出す。
 
 ---
 
-### Phase 3: Plan Review (Critic)
+### Phase 3: 計画レビュー (Critic)
 
-Call `mcp__belt__state_write` with `phase="critic"`, `status="running"`, `active=true`.
+`mcp__belt__state_write` を `phase="critic"`, `status="running"`, `active=true` で呼び出す。
 
-```
+```text
 Task(
   subagent_type="belt:critic",
-  prompt="{user's original request}\n\n## Work Plan\n{planner's plan from Phase 2}"
+  prompt="{ユーザーの元のリクエスト}\n\n## 作業計画\n{Phase 2 の planner 計画}"
 )
 ```
 
-If the verdict is **REJECT**:
-- Go back to Phase 2 Step 2 (planner) with the critic's feedback attached. Max 1 retry.
-- If the retry is also rejected, proceed with the best available plan and note the unresolved concerns.
+判定が **REJECT** の場合:
 
-If the verdict is **REVISE** or **ACCEPT-WITH-RESERVATIONS**:
-- Proceed, but pass the reservations to the executor as additional context.
+- critic のフィードバックを添付して Phase 2 Step 2（planner）に戻る。リトライは最大1回。
+- リトライも却下された場合、利用可能な最善の計画で続行し、未解決の懸念を記載する。
 
-Then call `mcp__belt__state_write` with `phase="critic"`, `status="done"`, `active=true`.
+判定が **REVISE** または **ACCEPT-WITH-RESERVATIONS** の場合:
+
+- 続行するが、留保事項を追加コンテキストとして executor に渡す。
+
+その後 `mcp__belt__state_write` を `phase="critic"`, `status="done"`, `active=true` で呼び出す。
 
 ---
 
-### Phase 4: Implementation (Executor)
+### Phase 4: 実装 (Executor - 並列実行)
 
-Call `mcp__belt__state_write` with `phase="executor"`, `status="running"`, `active=true`.
+`mcp__belt__state_write` を `phase="executor"`, `status="running"`, `active=true` で呼び出す。
 
-```
+planner の作業計画にはタスクが Group に整理されている。各 Group 内のタスクは独立しており並列実行できる。Group 間は逐次実行する（Group 1 → Group 2 → ...）。
+
+計画内の各 Group について、その Group のすべてのタスクを並列の executor エージェントとして起動する:
+
+```text
+# Group 1: すべてのタスクを並列に起動（1メッセージで複数の Task 呼び出し）
 Task(
   subagent_type="belt:executor",
-  prompt="{user's original request}\n\n## Work Plan\n{planner's plan from Phase 2}\n\n## Critic Feedback\n{critic's feedback from Phase 3, if any}"
+  prompt="{ユーザーの元のリクエスト}\n\n## 担当タスク\n{計画の Task 1.1}\n\n## 作業計画全体（参照用）\n{planner の計画}\n\n## Critic フィードバック\n{critic のフィードバック（あれば）}"
 )
+Task(
+  subagent_type="belt:executor",
+  prompt="{ユーザーの元のリクエスト}\n\n## 担当タスク\n{計画の Task 1.2}\n\n## 作業計画全体（参照用）\n{planner の計画}\n\n## Critic フィードバック\n{critic のフィードバック（あれば）}"
+)
+
+# Group 1 のすべてのタスクが完了するのを待ち、Group 2 に進む
 ```
 
-Then call `mcp__belt__state_write` with `phase="executor"`, `status="done"`, `active=true`.
+ルール:
+
+- 同じ Group 内のすべての Task 呼び出しは並列実行を有効にするために1つのメッセージに含めなければならない。
+- Group 内のすべてのタスクが完了するのを待ってから次の Group を開始する。
+- 計画に Group が1つしかないか、並列化マーカーがない場合、単一の executor として逐次実行する（非並列モードにフォールバック）。
+- 各 executor は担当タスクのみを受け取り、作業計画全体はコンテキスト用の読み取り専用参照として添付する。
+
+その後 `mcp__belt__state_write` を `phase="executor"`, `status="done"`, `active=true` で呼び出す。
 
 ---
 
 ### Phase 5: QA (Test Engineer → Debugger)
 
-Call `mcp__belt__state_write` with `phase="qa"`, `status="running"`, `active=true`.
+`mcp__belt__state_write` を `phase="qa"`, `status="running"`, `active=true` で呼び出す。
 
-**Step 1: Test Creation & Execution**
+#### Step 1: テスト作成・実行
 
-```
+```text
 Task(
   subagent_type="belt:test-engineer",
-  prompt="{user's original request}\n\n## Work Plan\n{planner's plan from Phase 2}\n\nWrite and run tests for the changes made. Follow existing test patterns in the codebase."
+  prompt="{ユーザーの元のリクエスト}\n\n## 作業計画\n{Phase 2 の planner 計画}\n\n変更に対するテストを作成・実行する。コードベースの既存テストパターンに従うこと。"
 )
 ```
 
-**Step 2: Build & Test Verification**
+#### Step 2: ビルド・テスト検証
 
-Run build and test commands using the Bash tool:
+Bash ツールでビルドおよびテストコマンドを実行する:
 
-1. Detect the project type and run the appropriate build command (e.g., `npm run build`, `go build ./...`, `cargo build`)
-2. Run tests (e.g., `npm test`, `go test ./...`, `cargo test`)
+1. プロジェクトタイプを検出し適切なビルドコマンドを実行する（例: `npm run build`, `go build ./...`, `cargo build`）
+2. テストを実行する（例: `npm test`, `go test ./...`, `cargo test`）
 
-**Step 3: Failure Resolution (if needed)**
+#### Step 3: 失敗の解決（必要な場合）
 
-If build or tests fail, launch the debugger agent:
+ビルドまたはテストが失敗した場合、debugger エージェントを起動する:
 
-```
+```text
 Task(
   subagent_type="belt:debugger",
-  prompt="Build/test failures detected.\n\n## Error Output\n{error output}\n\n## Work Plan\n{planner's plan from Phase 2}\n\nDiagnose and fix the root cause with minimal changes."
+  prompt="ビルド/テストの失敗を検出。\n\n## エラー出力\n{エラー出力}\n\n## 作業計画\n{Phase 2 の planner 計画}\n\n最小限の変更で根本原因を診断・修正すること。"
 )
 ```
 
-After debugger fixes, re-run build and tests. Retry up to 3 times total.
+debugger の修正後、ビルドとテストを再実行する。合計最大3回までリトライ。
 
-If all 3 attempts fail, call `mcp__belt__state_write` with `phase="qa"`, `status="error"`, `active=false` and report the failure to the user.
+3回すべて失敗した場合、`mcp__belt__state_write` を `phase="qa"`, `status="error"`, `active=false` で呼び出し、ユーザーに失敗を報告する。
 
-On success, call `mcp__belt__state_write` with `phase="qa"`, `status="done"`, `active=true`.
+成功した場合、`mcp__belt__state_write` を `phase="qa"`, `status="done"`, `active=true` で呼び出す。
 
 ---
 
-### Phase 6: Review (Reviewer + Security Reviewer)
+### Phase 6: レビュー (Reviewer + Security Reviewer)
 
-Call `mcp__belt__state_write` with `phase="review"`, `status="running"`, `active=true`.
+`mcp__belt__state_write` を `phase="review"`, `status="running"`, `active=true` で呼び出す。
 
-Launch both reviewers **in parallel**:
+両方のレビューアを**並列で**起動する:
 
-```
+```text
 Task(
   subagent_type="belt:reviewer",
-  prompt="{user's original request}\n\n## Work Plan\n{planner's plan from Phase 2}"
+  prompt="{ユーザーの元のリクエスト}\n\n## 作業計画\n{Phase 2 の planner 計画}"
 )
 
 Task(
   subagent_type="belt:security-reviewer",
-  prompt="{user's original request}\n\n## Work Plan\n{planner's plan from Phase 2}\n\nReview the implementation for security vulnerabilities."
+  prompt="{ユーザーの元のリクエスト}\n\n## 作業計画\n{Phase 2 の planner 計画}\n\n実装のセキュリティ脆弱性をレビューすること。"
 )
 ```
 
-**Handling review results:**
+レビュー結果の処理:
 
-- If either reviewer returns **CRITICAL** or **HIGH** issues: go back to Phase 4 (executor) with the review feedback. Max 1 retry.
-- If only **MEDIUM** or **LOW** issues: proceed and include them in the summary.
+- いずれかのレビューアが **CRITICAL** または **HIGH** の問題を返した場合: レビューフィードバック付きで Phase 4（executor）に戻る。リトライは最大1回。
+- **MEDIUM** または **LOW** の問題のみの場合: 続行しサマリーに含める。
 
-Then call `mcp__belt__state_write` with `phase="review"`, `status="done"`, `active=false`.
+その後 `mcp__belt__state_write` を `phase="review"`, `status="done"`, `active=false` で呼び出す。
 
 ---
 
-### Completion
+### 完了
 
-After all phases complete, present a summary to the user:
+すべてのフェーズが完了したら、ユーザーにサマリーを提示する:
 
-```
-## Autopilot Complete
+```text
+## オートパイロット完了
 
-### Requirements Analysis
-[Key gaps, guardrails, and acceptance criteria identified]
+### 要件分析
+[特定された主要なギャップ、ガードレール、受け入れ基準]
 
-### Design & Planning
-[Architecture decisions and work plan summary]
+### 設計・計画
+[アーキテクチャの判断と作業計画の概要]
 
-### Plan Review
-[Critic verdict and key concerns]
+### 計画レビュー
+[Critic の判定と主要な懸念]
 
-### Implementation
-[What was built/changed]
+### 実装
+[構築/変更された内容]
 
 ### QA
-[Tests written, build & test results]
+[作成されたテスト、ビルド・テスト結果]
 
-### Review
-[Code review verdict + security review verdict, key findings]
+### レビュー
+[コードレビューの判定 + セキュリティレビューの判定、主要な発見事項]
 ```
