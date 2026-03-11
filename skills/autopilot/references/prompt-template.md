@@ -1,8 +1,29 @@
 # プロンプトファイル共通テンプレート
 
-オーケストレーターが `.belt/phases/prompts/{name}.md` に書き出すプロンプトファイルの共通構造。
+オーケストレーターが `.belt/phases/prompts/{name}-i{iteration}.md` に書き出すプロンプトファイルの共通構造。
 
 各フェーズの「プロンプト仕様」に記載された変数を埋め込んで使用する。
+
+---
+
+## ファイル命名規則
+
+全ファイルにイテレーション番号 `-i{iteration}` を付与する。エージェント起動のたびに iteration を +1 する。
+
+- プロンプト: `prompts/{name}-i{iteration}.md`
+- 出力: `outputs/{name}-i{iteration}.md`
+- 例: `prompts/planner-i5.md` → `outputs/planner-i5.md`
+
+リトライ時は iteration が進むため前回のファイルが上書きされない:
+
+```text
+outputs/planner-i5.md    ← 初回の計画
+outputs/critic-i6.md     ← critic が REJECT
+outputs/planner-i7.md    ← リトライした計画（i5 は残る）
+outputs/critic-i8.md     ← 再レビュー
+```
+
+**参照追跡:** 各エージェント完了後、`latest_{name}` を更新する。後続エージェントの参照にはファイル名ではなく `latest_{name}` を使い、オーケストレーターが実際のファイルパスに解決する。
 
 ---
 
@@ -35,12 +56,12 @@
 
 以下のファイルを Read ツールで読み、コンテキストとして使用してください:
 
-- `.belt/phases/outputs/{参照1}` — {説明}
-- `.belt/phases/outputs/{参照2}` — {説明}
+- `.belt/phases/outputs/{latest_参照1 の実ファイル名}` — {説明}
+- `.belt/phases/outputs/{latest_参照2 の実ファイル名}` — {説明}
 
 ## 出力先
 
-作業結果を `.belt/phases/outputs/{name}.md` に Write ツールで保存してください。
+作業結果を `.belt/phases/outputs/{name}-i{iteration}.md` に Write ツールで保存してください。
 ```
 
 ---
@@ -50,7 +71,7 @@
 ```text
 Task(
   subagent_type="belt:{name}",
-  prompt="`.belt/phases/prompts/{name}.md` を Read ツールで読み、指示に従ってください。作業結果を `.belt/phases/outputs/{name}.md` に Write ツールで保存してください。"
+  prompt="`.belt/phases/prompts/{name}-i{iteration}.md` を Read ツールで読み、指示に従ってください。作業結果を `.belt/phases/outputs/{name}-i{iteration}.md` に Write ツールで保存してください。"
 )
 ```
 
@@ -60,7 +81,7 @@ executor の場合は `model` パラメータを追加:
 Task(
   subagent_type="belt:executor",
   model="{complexity に応じて sonnet または opus}",
-  prompt="`.belt/phases/prompts/executor-g{G}t{T}.md` を Read ツールで読み、指示に従ってください。作業結果を `.belt/phases/outputs/executor-g{G}t{T}.md` に Write ツールで保存してください。"
+  prompt="`.belt/phases/prompts/executor-g{G}t{T}-i{iteration}.md` を Read ツールで読み、指示に従ってください。作業結果を `.belt/phases/outputs/executor-g{G}t{T}-i{iteration}.md` に Write ツールで保存してください。"
 )
 ```
 
@@ -71,4 +92,4 @@ Task(
 Scout は `disallowedTools: Write` のためテンプレートを使わない。
 
 - Task prompt にリクエストをインラインで渡す
-- 戻り値をオーケストレーターが `.belt/phases/outputs/scout-*.md` に Write で保存する
+- 戻り値をオーケストレーターが `.belt/phases/outputs/scout-{type}-i{iteration}.md` に Write で保存する
