@@ -38,9 +38,23 @@ Task(
 
 ---
 
-### Step 3: 仕様書の生成
+### Step 3: 深掘り・提案 (対話)
 
-Step 1（analyst）と Step 2（architect）の出力を統合し、以下のフォーマットで `.belt/spec.md` に Write ツールで書き出す。
+Step 1（analyst）と Step 2（architect）の出力から、以下の観点で質問・提案を整理する:
+
+- analyst が検出したギャップや曖昧な点
+- architect が指摘した技術的トレードオフや選択肢
+- 追加で検討すべき機能やアプローチの提案
+
+これらを AskUserQuestion ツールで提示し、ユーザーの回答を得る。質問は最大4つに絞り、それぞれ選択肢を用意する。
+
+ユーザーの回答を Step 1・Step 2 の出力に反映し、要件を補強する。
+
+---
+
+### Step 4: 仕様書の生成
+
+Step 1（analyst）、Step 2（architect）、Step 3（ユーザーの回答）を統合し、以下のフォーマットで `.belt/spec.md` に Write ツールで書き出す。
 
 各セクションの項目はすべて未チェック (`- [ ]`) で出力する。analyst の出力から機能要件・非機能要件・エッジケースを、architect の出力から技術コンテキスト・制約を抽出して整理する。
 
@@ -76,7 +90,7 @@ Step 1（analyst）と Step 2（architect）の出力を統合し、以下のフ
 
 ---
 
-### Step 4: 案内
+### Step 5: 案内
 
 仕様書の出力が完了したら、ユーザーに以下を案内して終了する:
 
