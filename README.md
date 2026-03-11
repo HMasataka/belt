@@ -45,22 +45,99 @@ Claude Code 用の最小構成オートパイロットプラグイン。
 
 ### autopilot
 
-6フェーズのワークフローを実行します:
+6フェーズのワークフローを実行します。
 
-1. **要件分析** — Analyst エージェント (opus) がギャップ・ガードレール・エッジケースを分析
-2. **設計・計画** — Architect → Planner エージェント (opus) が実装計画を作成
-3. **計画レビュー** — Critic エージェント (opus) が計画を評価、最大3回リトライ
-4. **実装** — Executor エージェント (sonnet) が計画を実装（グループ単位で並列実行）
-5. **QA** — ビルドとテストを実行、失敗時は Debugger で最大3回リトライ
-6. **レビュー** — Reviewer + Security Reviewer エージェント (sonnet) が品質・セキュリティをチェック
+1. **要件分析** — Analyst (opus) がギャップ・ガードレール・エッジケースを分析
+1. **設計・計画** — Architect → Planner (opus) が実装計画を作成
+1. **計画レビュー** — Critic (opus) が計画を評価、REJECT 時は最大3回リトライ
+1. **実装** — Executor がグループ単位で並列実行 (complexity: high は opus、normal は sonnet)
+1. **QA** — Test Engineer + ビルド・テスト検証、失敗時は Debugger で最大2回リトライ
+1. **レビュー** — Reviewer + Security Reviewer (sonnet) が品質・セキュリティをチェック
+
+QA が2回失敗すると Architect が根本原因を診断し Phase 1 からやり直します（全体リトライ最大2回）。
+
+```mermaid
+flowchart TD
+    Start([autopilot 開始]) --> Resume{state_read}
+    Resume -->|新規| Clean[".belt/phases/ クリア"]
+    Resume -->|レジューム| Restore["phases/ から復元"]
+    Clean --> P1
+    Restore --> P1
+
+    P1["Phase 1: Analyst<br>要件分析"] --> P2
+    P2["Phase 2: Architect → Planner<br>設計・計画"] --> P3
+    P3{"Phase 3: Critic<br>計画レビュー"}
+    P3 -->|REJECT| P2R{"リトライ<br>3回目?"}
+    P2R -->|No| P2
+    P2R -->|Yes| P4
+    P3 -->|ACCEPT| P4
+
+    P4["Phase 4: Executor<br>実装 (並列)<br>high→opus / normal→sonnet"]
+    P4 --> P5
+
+    P5["Phase 5: QA<br>Test Engineer → Debugger"]
+    P5 -->|成功| P6
+    P5 -->|失敗| QARetry{"QA リトライ<br>2回目?"}
+    QARetry -->|No| P5
+    QARetry -->|Yes| Diag["Architect で根本原因診断"]
+    Diag --> FullRetry{"全体リトライ<br>2回目?"}
+    FullRetry -->|No| P1
+    FullRetry -->|Yes| Fail([失敗終了])
+
+    P6{"Phase 6: Review<br>Reviewer + Security<br>(並列)"}
+    P6 -->|CRITICAL/HIGH| P4R{"リトライ<br>3回目?"}
+    P4R -->|No| P4
+    P4R -->|Yes| Done
+    P6 -->|OK| Done([完了])
+```
 
 ### spec → roadmap → cruise
 
-大規模タスクを段階的に進めるワークフローです:
+大規模タスクを段階的に進めるワークフローです。
+各スキルの間に人間のレビューポイントがあります。
 
-1. **spec** — Analyst と Architect が要件を分析し、チェックボックス付き仕様書を出力
-2. **roadmap** — チェック済み要件から Architect が設計、Planner がマイルストーンに分解、Critic がレビュー
-3. **cruise** — 各マイルストーンを autopilot で順次実行し、進捗をチェックボックスで管理
+1. **spec** — Analyst と Architect が要件を分析、AskUserQuestion で深掘り、チェックボックス付き仕様書を `.belt/spec.md` に出力
+1. **人間のレビュー** — spec.md のチェックボックスで採用する要件を選択
+1. **roadmap** — チェック済み要件から Architect が設計、Planner がマイルストーンに分解、Critic がレビュー、`.belt/roadmap.md` に出力
+1. **人間のレビュー** — roadmap.md の内容を確認
+1. **cruise** — 各マイルストーンを autopilot で順次実行し、完了タスクのチェックボックスを更新。中断後も `/cruise` で再開可能
+
+```mermaid
+flowchart TD
+    subgraph spec ["/spec"]
+        S1["Analyst<br>要件分析"] --> S2["Architect<br>技術調査"]
+        S2 --> S3["AskUserQuestion<br>深掘り・提案"]
+        S3 --> S4["仕様書生成<br>.belt/spec.md"]
+    end
+
+    S4 --> Human1{{"人間がレビュー<br>チェックボックスで<br>要件を選択"}}
+
+    subgraph roadmap ["/roadmap"]
+        R1["spec.md 読み込み<br>チェック済み項目のみ抽出"]
+        R1 --> R2["Architect<br>アーキテクチャ設計"]
+        R2 --> R3["Planner<br>マイルストーン分解"]
+        R3 --> R4{"Critic<br>レビュー"}
+        R4 -->|REJECT| R3R{"リトライ<br>3回目?"}
+        R3R -->|No| R3
+        R3R -->|Yes| R5
+        R4 -->|ACCEPT| R5["ロードマップ生成<br>.belt/roadmap.md"]
+    end
+
+    Human1 --> R1
+
+    R5 --> Human2{{"人間がレビュー<br>内容を確認"}}
+
+    subgraph cruise ["/cruise"]
+        C1["roadmap.md 読み込み"]
+        C1 --> C2{"未完了マイルストーン<br>あり?"}
+        C2 -->|Yes| C3["autopilot 実行<br>(マイルストーン単位)"]
+        C3 --> C4["roadmap.md<br>チェック更新"]
+        C4 --> C2
+        C2 -->|No| C5([cruise 完了])
+    end
+
+    Human2 --> C1
+```
 
 MCP サーバーで状態を永続化するため、中断したワークフローを再開できます。
 
