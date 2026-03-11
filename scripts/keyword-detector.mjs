@@ -5,6 +5,7 @@ const KEYWORDS = [
   { name: "spec", pattern: /\b(spec|仕様書?)(?!\.)\b/i },
   { name: "roadmap", pattern: /\b(roadmap|ロードマップ)(?!\.)\b/i },
   { name: "cruise", pattern: /\b(cruise|クルーズ)(?!\.)\b/i },
+  { name: "brainstorm", pattern: /\b(brainstorm|ブレスト|壁打ち)(?!\.)\b/i },
 ];
 
 // Read stdin
