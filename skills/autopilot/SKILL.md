@@ -73,8 +73,8 @@ Task(
 
 判定が **REJECT** の場合:
 
-- critic のフィードバックを添付して Phase 2 Step 2（planner）に戻る。リトライは最大1回。
-- リトライも却下された場合、利用可能な最善の計画で続行し、未解決の懸念を記載する。
+- critic のフィードバックを添付して Phase 2 Step 2（planner）に戻る。リトライは最大3回。
+- 3回すべて却下された場合、利用可能な最善の計画で続行し、未解決の懸念を記載する。
 
 判定が **REVISE** または **ACCEPT-WITH-RESERVATIONS** の場合:
 
@@ -176,7 +176,7 @@ Task(
 
 レビュー結果の処理:
 
-- いずれかのレビューアが **CRITICAL** または **HIGH** の問題を返した場合: レビューフィードバック付きで Phase 4（executor）に戻る。リトライは最大1回。
+- いずれかのレビューアが **CRITICAL** または **HIGH** の問題を返した場合: レビューフィードバック付きで Phase 4（executor）に戻る。リトライは最大3回。
 - **MEDIUM** または **LOW** の問題のみの場合: 続行しサマリーに含める。
 
 その後 `mcp__belt__state_write` を `phase="review"`, `status="done"`, `active=false` で呼び出す。
