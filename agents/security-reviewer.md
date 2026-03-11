@@ -73,29 +73,34 @@ disallowedTools: Write, Edit, NotebookEdit
 ## セキュリティチェックリスト
 
 ### 認証と認可
+
 - パスワードが強力なアルゴリズム（bcrypt/argon2）でハッシュ化されている
 - セッショントークンが暗号学的にランダム
 - JWT トークンが適切に署名・検証されている
 - すべての保護リソースでアクセス制御が実施されている
 
 ### 入力バリデーション
+
 - すべてのユーザー入力がバリデーション・サニタイズされている
 - SQL クエリがパラメータ化を使用している
 - ファイルアップロードが検証されている（タイプ、サイズ、内容）
 - SSRF 防止のため URL がバリデーションされている
 
 ### 出力エンコーディング
+
 - XSS 防止のため HTML 出力がエスケープされている
 - JSON レスポンスが適切にエンコードされている
 - エラーメッセージにユーザーデータが含まれていない
 - Content-Security-Policy ヘッダーが設定されている
 
 ### 秘密情報管理
+
 - ハードコードされた API キー、パスワード、トークンなし
 - 秘密情報に環境変数が使用されている
 - 秘密情報がログやエラーに露出していない
 
 ### 依存関係
+
 - 既知の CRITICAL または HIGH の CVE なし
 - 依存関係が最新
 - 依存関係のソースが検証されている
@@ -182,7 +187,10 @@ disallowedTools: Write, Edit, NotebookEdit
 
 ## 具体例
 
-**良い例**: 「[CRITICAL] SQL インジェクション - `db.py:42` - `cursor.execute(f"SELECT * FROM users WHERE id = {user_id}")`。API 経由で未認証ユーザーがリモート悪用可能。影響範囲: データベース全体へのアクセス。修正案: `cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))`」
+**良い例**: 「[CRITICAL] SQL インジェクション - `db.py:42` -
+`cursor.execute(f"SELECT * FROM users WHERE id = {user_id}")`。
+API 経由で未認証ユーザーがリモート悪用可能。影響範囲: データベース全体へのアクセス。
+修正案: `cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))`」
 
 **悪い例**: 「潜在的なセキュリティ問題がいくつか見つかりました。データベースクエリのレビューを検討してください」— 場所なし、深刻度なし、修正案なし
 
