@@ -90,17 +90,24 @@ Task(
 
 planner の作業計画にはタスクが Group に整理されている。各 Group 内のタスクは独立しており並列実行できる。Group 間は逐次実行する（Group 1 → Group 2 → ...）。
 
-計画内の各 Group について、その Group のすべてのタスクを並列の executor エージェントとして起動する:
+計画内の各 Group について、その Group のすべてのタスクを並列の executor エージェントとして起動する。
+
+各タスクの `complexity` に応じて `model` パラメータを切り替える:
+
+- `complexity: high` → `model="opus"`
+- `complexity: normal` または未指定 → `model="sonnet"`
 
 ```text
 # Group 1: すべてのタスクを並列に起動（1メッセージで複数の Task 呼び出し）
 Task(
   subagent_type="belt:executor",
-  prompt="{ユーザーの元のリクエスト}\n\n## 担当タスク\n{計画の Task 1.1}\n\n## 作業計画全体（参照用）\n{planner の計画}\n\n## Critic フィードバック\n{critic のフィードバック（あれば）}"
+  model="sonnet",
+  prompt="{ユーザーの元のリクエスト}\n\n## 担当タスク\n{計画の Task 1.1 (complexity: normal)}\n\n## 作業計画全体（参照用）\n{planner の計画}\n\n## Critic フィードバック\n{critic のフィードバック（あれば）}"
 )
 Task(
   subagent_type="belt:executor",
-  prompt="{ユーザーの元のリクエスト}\n\n## 担当タスク\n{計画の Task 1.2}\n\n## 作業計画全体（参照用）\n{planner の計画}\n\n## Critic フィードバック\n{critic のフィードバック（あれば）}"
+  model="opus",
+  prompt="{ユーザーの元のリクエスト}\n\n## 担当タスク\n{計画の Task 1.2 (complexity: high)}\n\n## 作業計画全体（参照用）\n{planner の計画}\n\n## Critic フィードバック\n{critic のフィードバック（あれば）}"
 )
 
 # Group 1 のすべてのタスクが完了するのを待ち、Group 2 に進む
@@ -112,6 +119,7 @@ Task(
 - Group 内のすべてのタスクが完了するのを待ってから次の Group を開始する。
 - 計画に Group が1つしかないか、並列化マーカーがない場合、単一の executor として逐次実行する（非並列モードにフォールバック）。
 - 各 executor は担当タスクのみを受け取り、作業計画全体はコンテキスト用の読み取り専用参照として添付する。
+- `complexity: high` のタスクは `model="opus"` で起動する。それ以外は `model="sonnet"` で起動する。
 
 その後 `mcp__belt__state_write` を `phase="executor"`, `status="done"`, `active=true` で呼び出す。
 
