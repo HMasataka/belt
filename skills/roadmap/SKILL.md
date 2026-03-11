@@ -8,6 +8,8 @@ argument-hint: ""
 
 `.belt/spec.md` のチェック済み項目を基に、マイルストーン付きのロードマップを `.belt/roadmap.md` に出力する。
 
+起動時に Bash ツールで `mkdir -p .belt/phases/prompts .belt/phases/outputs` を実行してディレクトリを作成する。
+
 ---
 
 ### Step 1: 仕様書の読み込みとフィルタリング
@@ -22,33 +24,63 @@ Read ツールで `.belt/spec.md` を読み込む。
 
 ### Step 2: アーキテクチャ設計 (Architect)
 
-Task ツールで architect エージェントを起動し、チェック済み要件に基づく全体設計を行う:
+オーケストレーターが Write ツールで `.belt/phases/prompts/architect.md` にプロンプトファイルを作成する:
 
-```text
-Task(
-  subagent_type="belt:architect",
-  prompt="以下のチェック済み要件に基づいてアーキテクチャ設計を行ってください。\n\n## 技術コンテキスト\n{spec.md の技術コンテキストセクション}\n\n## チェック済み要件\n{Step 1 で抽出したチェック済み項目}"
-)
-```
+```markdown
+## タスク
 
-architect には以下の観点での設計を求める:
+以下のチェック済み要件に基づいてアーキテクチャ設計を行ってください。
+
+## 技術コンテキスト
+
+{spec.md の技術コンテキストセクション}
+
+## チェック済み要件
+
+{Step 1 で抽出したチェック済み項目}
+
+## 設計の観点
 
 - レイヤー構成と責務分離
 - 依存関係の分析
 - 拡張性の設計方針
 
+## 出力先
+
+作業結果を `.belt/phases/outputs/architect.md` に Write ツールで保存してください。
+```
+
+最小 Task prompt で architect を起動する:
+
+```text
+Task(
+  subagent_type="belt:architect",
+  prompt="`.belt/phases/prompts/architect.md` を Read ツールで読み、指示に従ってください。作業結果を `.belt/phases/outputs/architect.md` に Write ツールで保存してください。"
+)
+```
+
 ---
 
 ### Step 3: タスク分解 (Planner)
 
-Task ツールで planner エージェントを起動し、architect の設計とチェック済み要件からタスクをマイルストーンに分解する:
+オーケストレーターが Write ツールで `.belt/phases/prompts/planner.md` にプロンプトファイルを作成する:
 
-planner には以下の情報を渡す:
+```markdown
+## タスク
 
-- Step 2 の architect 出力（アーキテクチャ設計）
-- Step 1 で抽出したチェック済み項目
+以下の設計とチェック済み要件からマイルストーン付きのロードマップを作成してください。
 
-設計原則:
+## 前フェーズの出力
+
+以下のファイルを Read ツールで読み、コンテキストとして使用してください:
+
+- `.belt/phases/outputs/architect.md` — アーキテクチャ設計
+
+## チェック済み要件
+
+{Step 1 で抽出したチェック済み項目}
+
+## 設計原則
 
 - 完動品の原則: 各マイルストーンは単体で動作するソフトウェアを生み出すこと
 - 依存関係に基づく順序付け: 後続タスクが依存するものを先に配置
@@ -56,16 +88,22 @@ planner には以下の情報を渡す:
 - マイルストーン粒度: 1-2週間目安、4週間を超える場合は分割
 - 価値の評価: Must Have → Should Have → Nice to Have の優先順位
 
-出力フォーマットの指示:
+## 出力フォーマット
 
 - 各マイルストーンに version (v0.1, v0.2, ...), 名前, ゴール, 完動品としての価値, タスク一覧を含める
 - 各タスクは autopilot で実行可能な粒度にする
 
+## 出力先
+
+作業結果を `.belt/phases/outputs/planner.md` に Write ツールで保存してください。
+```
+
+最小 Task prompt で planner を起動する:
+
 ```text
 Task(
   subagent_type="belt:planner",
-  prompt="以下の設計とチェック済み要件からマイルストーン付きのロードマップを作成してください。
-    {上記の設計原則と出力フォーマットの指示を含める}"
+  prompt="`.belt/phases/prompts/planner.md` を Read ツールで読み、指示に従ってください。作業結果を `.belt/phases/outputs/planner.md` に Write ツールで保存してください。"
 )
 ```
 
@@ -73,18 +111,51 @@ Task(
 
 ### Step 4: ロードマップレビュー (Critic)
 
-Task ツールで critic エージェントを起動し、ロードマップの品質をレビューする:
+オーケストレーターが Write ツールで `.belt/phases/prompts/critic.md` にプロンプトファイルを作成する:
+
+```markdown
+## タスク
+
+以下のロードマップをレビューしてください。
+
+## ロードマップ
+
+以下のファイルを Read ツールで読み、レビュー対象として使用してください:
+
+- `.belt/phases/outputs/planner.md` — ロードマップ
+
+## 評価基準
+
+- 各マイルストーンが完動品の原則を満たしているか
+- 依存関係の順序が正しいか
+- タスク粒度が autopilot で実行可能か
+- チェック済み要件がすべてカバーされているか
+
+## 出力先
+
+作業結果を `.belt/phases/outputs/critic.md` に Write ツールで保存してください。
+```
+
+最小 Task prompt で critic を起動する:
 
 ```text
 Task(
   subagent_type="belt:critic",
-  prompt="以下のロードマップをレビューしてください。\n\n## ロードマップ\n{Step 3 の planner 出力}\n\n## 評価基準\n- 各マイルストーンが完動品の原則を満たしているか\n- 依存関係の順序が正しいか\n- タスク粒度が autopilot で実行可能か\n- チェック済み要件がすべてカバーされているか"
+  prompt="`.belt/phases/prompts/critic.md` を Read ツールで読み、指示に従ってください。作業結果を `.belt/phases/outputs/critic.md` に Write ツールで保存してください。"
 )
 ```
 
 判定が **REJECT** の場合:
 
-- critic のフィードバックを添付して Step 3（planner）に戻る。リトライは最大3回。
+- オーケストレーターが `.belt/phases/prompts/planner.md` を上書きし、critic フィードバックへの参照を追加する:
+  ```markdown
+  ## Critic フィードバック
+
+  以下のファイルを Read ツールで読み、フィードバックを反映して計画を改善してください:
+
+  - `.belt/phases/outputs/critic.md` — Critic のフィードバック
+  ```
+- Step 3（planner）を再実行する。リトライは最大3回。
 - 3回すべて却下された場合、利用可能な最善の計画で続行する。
 
 判定が **REVISE** または **ACCEPT-WITH-RESERVATIONS** の場合:
@@ -96,6 +167,8 @@ Task(
 ### Step 5: ロードマップの出力
 
 最終的なロードマップを以下のフォーマットで `.belt/roadmap.md` に Write ツールで書き出す。
+
+`.belt/phases/outputs/planner.md` と `.belt/phases/outputs/architect.md` を Read ツールで読み込み、統合する。
 
 各タスクはすべて未チェック (`- [ ]`) で出力する。
 

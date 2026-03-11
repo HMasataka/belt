@@ -8,31 +8,49 @@ argument-hint: "<タスクの説明>"
 
 ユーザーのリクエストを分析し、人間がレビュー可能なチェックボックス付き仕様書を `.belt/spec.md` に出力する。
 
+起動時に Bash ツールで `mkdir -p .belt/phases/prompts .belt/phases/outputs` を実行してディレクトリを作成する。
+
 ---
 
 ### Step 1: 要件分析 (Analyst)
 
-Task ツールで analyst エージェントを起動し、ユーザーのリクエストを分析する:
+Task ツールで analyst エージェントを起動し、ユーザーのリクエストを分析する。analyst の入力はユーザーリクエストのみのため、プロンプトファイルは不要:
 
 ```text
 Task(
   subagent_type="belt:analyst",
-  prompt="{ユーザーの元のリクエスト}"
+  prompt="{ユーザーの元のリクエスト}\n\n作業結果を `.belt/phases/outputs/analyst.md` に Write ツールで保存してください。"
 )
 ```
-
-分析出力（ギャップ、ガードレール、エッジケース、受け入れ基準）を保存する。
 
 ---
 
 ### Step 2: 技術調査 (Architect)
 
-Task ツールで architect エージェントを起動し、コードベースの技術的制約と推奨を調査する:
+オーケストレーターが Write ツールで `.belt/phases/prompts/architect.md` にプロンプトファイルを作成する:
+
+```markdown
+## タスク
+
+{ユーザーの元のリクエスト}
+
+## 前フェーズの出力
+
+以下のファイルを Read ツールで読み、コンテキストとして使用してください:
+
+- `.belt/phases/outputs/analyst.md` — 要件分析結果
+
+## 出力先
+
+作業結果を `.belt/phases/outputs/architect.md` に Write ツールで保存してください。
+```
+
+最小 Task prompt で architect を起動する:
 
 ```text
 Task(
   subagent_type="belt:architect",
-  prompt="{ユーザーの元のリクエスト}\n\n## Analyst 出力\n{Step 1 の analyst 出力}"
+  prompt="`.belt/phases/prompts/architect.md` を Read ツールで読み、指示に従ってください。作業結果を `.belt/phases/outputs/architect.md` に Write ツールで保存してください。"
 )
 ```
 
@@ -40,7 +58,7 @@ Task(
 
 ### Step 3: 深掘り・提案 (対話)
 
-Step 1（analyst）と Step 2（architect）の出力から、以下の観点で質問・提案を整理する:
+`.belt/phases/outputs/analyst.md` と `.belt/phases/outputs/architect.md` を Read ツールで読み込み、以下の観点で質問・提案を整理する:
 
 - analyst が検出したギャップや曖昧な点
 - architect が指摘した技術的トレードオフや選択肢
@@ -54,7 +72,7 @@ Step 1（analyst）と Step 2（architect）の出力から、以下の観点で
 
 ### Step 4: 仕様書の生成
 
-Step 1（analyst）、Step 2（architect）、Step 3（ユーザーの回答）を統合し、以下のフォーマットで `.belt/spec.md` に Write ツールで書き出す。
+`.belt/phases/outputs/analyst.md` と `.belt/phases/outputs/architect.md` を Read ツールで読み込み、Step 3 のユーザーの回答と統合し、以下のフォーマットで `.belt/spec.md` に Write ツールで書き出す。
 
 各セクションの項目はすべて未チェック (`- [ ]`) で出力する。analyst の出力から機能要件・非機能要件・エッジケースを、architect の出力から技術コンテキスト・制約を抽出して整理する。
 
