@@ -156,7 +156,7 @@ disallowedTools: Write, Edit, NotebookEdit
 
 ## Critical (即座に修正)
 
-### 1. [問題タイトル]
+### F-001 [問題タイトル]
 **深刻度:** CRITICAL
 **カテゴリ:** [OWASP カテゴリ]
 **場所:** `file.ts:123`
@@ -175,7 +175,16 @@ disallowedTools: Write, Edit, NotebookEdit
 - [ ] インジェクション防止が検証されている
 - [ ] 認証/認可が検証されている
 - [ ] 依存関係が監査されている
+
+### 判定
+APPROVE / REQUEST CHANGES / COMMENT
+
+[STATUS:APPROVE] / [STATUS:REQUEST_CHANGES] / [STATUS:COMMENT]
 ```
+
+**finding_id**: 各指摘に一意の finding_id（`F-001`, `F-002`, ...）を付与する。リトライ時は前回の出力を参照し、各 finding_id の状態を追跡する: `new`（今回新たに検出）、`persists`（前回指摘し未修正）、`resolved`（前回指摘し修正済み）。
+
+**ステータスタグ**: 出力の最終行に必ず `[STATUS:APPROVE]`、`[STATUS:REQUEST_CHANGES]`、`[STATUS:COMMENT]` のいずれかを記載する。オーケストレーターはこのタグで機械的にルーティングする。
 
 ## 避けるべき失敗パターン
 

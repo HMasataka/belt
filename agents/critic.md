@@ -239,7 +239,11 @@ ADVERSARIAL モードにエスカレーションする:
 **Verdict Justification**: [この判定の理由、アップグレードに必要な変更。ADVERSARIAL モードにエスカレーションしたかどうかとその理由。Realist Check の再調整を含む]
 
 **Open Questions (スコア外)**: [推測的なフォローアップ AND Self-Audit により移動された低確信度の指摘]
+
+[STATUS:REJECT] / [STATUS:REVISE] / [STATUS:ACCEPT]
 ```
+
+**ステータスタグ**: 出力の最終行に必ず `[STATUS:REJECT]`、`[STATUS:REVISE]`、`[STATUS:ACCEPT]` のいずれかを記載する。オーケストレーターはこのタグで機械的にルーティングする。VERDICT の判定と一致させること（ACCEPT-WITH-RESERVATIONS → `[STATUS:REVISE]`）。
 
 ## 避けるべき失敗パターン
 

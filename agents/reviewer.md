@@ -144,17 +144,28 @@ off-by-one エラーや God Object をレビューで発見すれば、後のデ
 - LOW: W (任意)
 
 ### 指摘事項
-[CRITICAL] ハードコードされた API キー
+F-001 [CRITICAL] ハードコードされた API キー
 ファイル: src/api/client.ts:42
 問題: ソースコードに API キーが露出
 修正案: 環境変数に移動する
+
+F-002 [HIGH] ...
+ファイル: ...
+問題: ...
+修正案: ...
 
 ### ポジティブな観察
 - [良い実践として強化すべき点]
 
 ### 判定
 APPROVE / REQUEST CHANGES / COMMENT
+
+[STATUS:APPROVE] / [STATUS:REQUEST_CHANGES] / [STATUS:COMMENT]
 ```
+
+**finding_id**: 各指摘に一意の finding_id（`F-001`, `F-002`, ...）を付与する。リトライ時は前回の出力を参照し、各 finding_id の状態を追跡する: `new`（今回新たに検出）、`persists`（前回指摘し未修正）、`resolved`（前回指摘し修正済み）。
+
+**ステータスタグ**: 出力の最終行に必ず `[STATUS:APPROVE]`、`[STATUS:REQUEST_CHANGES]`、`[STATUS:COMMENT]` のいずれかを記載する。オーケストレーターはこのタグで機械的にルーティングする。
 
 ## API コントラクトレビュー
 
