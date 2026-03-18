@@ -5,41 +5,45 @@ import { z } from "zod";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 
-const STATE_PATH = resolve(process.cwd(), ".belt", "state.json");
+const STATE_DIR = resolve(process.cwd(), ".belt");
 
-function readState() {
+function statePath(mode) {
+  return resolve(STATE_DIR, `state-${mode}.json`);
+}
+
+function readState(mode) {
   try {
-    return JSON.parse(readFileSync(STATE_PATH, "utf-8"));
+    return JSON.parse(readFileSync(statePath(mode), "utf-8"));
   } catch {
-    return { phase: null, active: false, history: [] };
+    return { mode, phase: null, active: false, history: [] };
   }
 }
 
-function writeState(state) {
-  mkdirSync(dirname(STATE_PATH), { recursive: true });
-  writeFileSync(STATE_PATH, JSON.stringify(state, null, 2) + "\n");
+function writeState(mode, state) {
+  mkdirSync(STATE_DIR, { recursive: true });
+  writeFileSync(statePath(mode), JSON.stringify(state, null, 2) + "\n");
 }
 
-const server = new McpServer({
-  name: "belt",
-  version: "0.1.0",
-});
+const server = new McpServer({ name: "belt", version: "0.1.0" });
 
 server.tool(
   "state_write",
-  "Save autopilot workflow state (phase progress and active flag)",
+  "Save workflow state (phase progress and active flag)",
   {
+    mode: z
+      .enum(["autopilot", "cruise"])
+      .default("autopilot")
+      .describe("Workflow mode (autopilot or cruise)"),
     phase: z
       .string()
       .describe("Current phase name (e.g. architect, executor, qa, reviewer)"),
     status: z.enum(["running", "done", "error"]).describe("Phase status"),
-    active: z
-      .boolean()
-      .describe("Whether the autopilot workflow is still active"),
+    active: z.boolean().describe("Whether the workflow is still active"),
     message: z.string().optional().describe("Optional status message"),
   },
-  async ({ phase, status, active, message }) => {
-    const state = readState();
+  async ({ mode, phase, status, active, message }) => {
+    const state = readState(mode);
+    state.mode = mode;
     state.phase = phase;
     state.active = active;
     state.updatedAt = new Date().toISOString();
@@ -53,12 +57,12 @@ server.tool(
       message,
     });
 
-    writeState(state);
+    writeState(mode, state);
     return {
       content: [
         {
           type: "text",
-          text: `State saved: phase=${phase}, status=${status}, active=${active}`,
+          text: `State saved: mode=${mode}, phase=${phase}, status=${status}, active=${active}`,
         },
       ],
     };
@@ -67,10 +71,15 @@ server.tool(
 
 server.tool(
   "state_read",
-  "Read current autopilot workflow state",
-  {},
-  async () => {
-    const state = readState();
+  "Read current workflow state",
+  {
+    mode: z
+      .enum(["autopilot", "cruise"])
+      .default("autopilot")
+      .describe("Workflow mode to read (autopilot or cruise)"),
+  },
+  async ({ mode }) => {
+    const state = readState(mode);
     return {
       content: [{ type: "text", text: JSON.stringify(state, null, 2) }],
     };

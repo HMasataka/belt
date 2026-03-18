@@ -12,7 +12,7 @@ argument-hint: ""
 
 ### 起動: 状態設定
 
-`mcp__belt__state_write` を `phase="cruise"`, `status="running"`, `active=true` で呼び出す。
+`mcp__belt__state_write` を `mode="cruise"`, `phase="cruise"`, `status="running"`, `active=true` で呼び出す。
 
 ---
 
@@ -36,7 +36,7 @@ Read ツールで `.belt/roadmap.md` を読み込む。
 
 ### Step 3: マイルストーンの実行
 
-特定したマイルストーンについて、`mcp__belt__state_write` を `phase="cruise"`, `status="running"`, `active=true`, `message="v0.X - マイルストーン名"` で呼び出す。
+特定したマイルストーンについて、`mcp__belt__state_write` を `mode="cruise"`, `phase="cruise"`, `status="running"`, `active=true`, `message="v0.X - マイルストーン名"` で呼び出す。
 
 そのマイルストーン内の未チェックタスクを収集し、Skill ツールで autopilot スキルを呼び出す:
 
@@ -64,7 +64,7 @@ autopilot の完了後、Edit ツールで `.belt/roadmap.md` を更新する:
 
 すべてのマイルストーンが完了したら:
 
-1. `mcp__belt__state_write` を `phase="cruise"`, `status="done"`, `active=false` で呼び出す
+1. `mcp__belt__state_write` を `mode="cruise"`, `phase="cruise"`, `status="done"`, `active=false` で呼び出す
 2. ユーザーにサマリーを提示する:
 
 ```text
