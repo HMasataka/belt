@@ -1,6 +1,10 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "belt",
+  "owner": {
+    "name": "HMasataka",
+    "url": "https://github.com/HMasataka"
+  },
   "plugins": [
     {
       "name": "belt",
