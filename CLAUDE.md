@@ -45,7 +45,7 @@ cruise と ship はどちらも未完了マイルストーンを進めるが、c
 
 ### dispatch（単発タスク用、autopilot + 2 レビュー）
 
-roadmap / breakdown に依存しない単発リクエスト用。autopilot で実装したあと、ship と同じく `reviewer` + `ai-antipattern-reviewer` を並列起動して最小レビューゲートを通す。受け入れ基準はユーザーの依頼内容そのものとして扱う。`REQUEST_CHANGES` なら autopilot を最大 2 回まで再実行する。ship との違いは PR/マイルストーンのチェック管理を持たない点のみ。
+roadmap / breakdown に依存しない単発リクエスト用。autopilot で実装したあと、ship と同じく `reviewer` + `ai-antipattern-reviewer` を並列起動して最小レビューゲートを通す。受け入れ基準はユーザーの依頼内容そのものとして扱う。`REQUEST_CHANGES` なら autopilot を最大 2 回まで再実行する。タスクが大きい場合は autopilot に渡す前に planner で実装単位への分解・順序付けを行い、その計画を autopilot のコンテキストに含める（autopilot 1 回の実行は変えず計画で質を上げる）。ship との違いは PR/マイルストーンのチェック管理を持たない点と、大タスク時に前段 planner を挟む点。
 
 ### brainstorm
 

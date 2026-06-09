@@ -20,7 +20,7 @@ Claude Code 用の最小構成オートパイロットプラグイン。
 /belt:dispatch <タスクの内容>    # autopilot + reviewer/ai-antipattern-reviewer の追加レビュー
 ```
 
-`dispatch` は autopilot の実装に、依頼内容を受け入れ基準とした reviewer + ai-antipattern-reviewer の最小レビューゲートを加えた単発タスク版です（roadmap 非依存）。
+`dispatch` は autopilot の実装に、依頼内容を受け入れ基準とした reviewer + ai-antipattern-reviewer の最小レビューゲートを加えた単発タスク版です（roadmap 非依存）。タスクが大きい場合は autopilot に渡す前に planner で実装単位へ分解・順序付けしてから流します。
 
 ### 壁打ち・ブレスト
 
@@ -59,7 +59,7 @@ Claude Code 用の最小構成オートパイロットプラグイン。
 | スキル         | 説明                                                                                        |
 | -------------- | ------------------------------------------------------------------------------------------- |
 | `autopilot`    | 分析・設計・計画・実装・QA・レビューの6フェーズを一括実行                                   |
-| `dispatch`     | 単発タスクを autopilot で実装し、reviewer + ai-antipattern-reviewer の最小レビューを通す（roadmap 非依存） |
+| `dispatch`     | 単発タスクを（大きい場合は planner で計画してから）autopilot で実装し、reviewer + ai-antipattern-reviewer の最小レビューを通す（roadmap 非依存） |
 | `spec`         | 要件分析を行い、チェックボックス付き仕様ドラフトを `.belt/spec.draft.md` に出力             |
 | `spec-confirm` | `spec.draft.md` のチェック済み要件のみを `.belt/spec.md` に出力                             |
 | `roadmap`      | `spec.md` からマイルストーン付きロードマップを生成                                          |
