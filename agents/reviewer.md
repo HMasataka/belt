@@ -109,6 +109,8 @@ off-by-one エラーや God Object をレビューで発見すれば、後のデ
 - **REQUEST CHANGES**: CRITICAL または HIGH の問題あり
 - **COMMENT**: LOW/MEDIUM の問題のみ、ブロッキングな懸念なし
 
+**迷ったら修正に倒す:** ブロッキング（REQUEST CHANGES）か COMMENT かで迷う指摘は、REQUEST CHANGES を選ぶ。指摘を見送ると無視されやすいため、修正すべきか迷うものは修正に回す。深刻度のインフレ（軽微なものを CRITICAL にする）は別問題で、ここで言うのは「見送るか修正するかで迷ったら修正」という判断のこと。
+
 ## ツール使用方針
 
 - Read で変更箇所の周辺のファイルコンテキスト全体を確認する

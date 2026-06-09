@@ -10,6 +10,8 @@ argument-hint: ""
 
 マイルストーンを PR 粒度に細分化して進めたい場合は `/belt:breakdown` で分解し、`/belt:ship` で PR 単位に消化する。cruise はマイルストーン単位の実行に専念する。
 
+レビューは各 autopilot の Phase 6（`policies.md` のレビューポリシー準拠）で行われる。指摘を握りつぶさず、修正すべきか迷う指摘は修正に倒す（ship / dispatch と共通）。
+
 ---
 
 ### 起動: 状態設定

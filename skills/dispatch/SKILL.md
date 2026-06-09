@@ -70,7 +70,7 @@ autopilot が完了した変更を最小レビューに通す。冒頭で `itera
 
    - `skills/autopilot/references/policies.md`
 
-   各指摘に finding_id（`F-001`...）を付与し、出力末尾に `[STATUS:APPROVE|REQUEST_CHANGES|COMMENT]` を出力してください。
+   各指摘に finding_id（`F-001`...）を付与し、出力末尾に `[STATUS:APPROVE|REQUEST_CHANGES|COMMENT]` を出力してください。修正すべきか迷う指摘は `REQUEST_CHANGES` に倒し、見送らないこと。
 
    ## 出力先
 
