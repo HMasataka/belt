@@ -31,9 +31,9 @@ server.tool(
   "Save workflow state (phase progress and active flag)",
   {
     mode: z
-      .enum(["autopilot", "cruise", "ship"])
+      .enum(["autopilot", "cruise", "ship", "dispatch"])
       .default("autopilot")
-      .describe("Workflow mode (autopilot, cruise, or ship)"),
+      .describe("Workflow mode (autopilot, cruise, ship, or dispatch)"),
     phase: z
       .string()
       .describe("Current phase name (e.g. architect, executor, qa, reviewer)"),
@@ -74,9 +74,9 @@ server.tool(
   "Read current workflow state",
   {
     mode: z
-      .enum(["autopilot", "cruise", "ship"])
+      .enum(["autopilot", "cruise", "ship", "dispatch"])
       .default("autopilot")
-      .describe("Workflow mode to read (autopilot, cruise, or ship)"),
+      .describe("Workflow mode to read (autopilot, cruise, ship, or dispatch)"),
   },
   async ({ mode }) => {
     const state = readState(mode);

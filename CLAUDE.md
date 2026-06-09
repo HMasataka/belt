@@ -43,6 +43,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 cruise と ship はどちらも未完了マイルストーンを進めるが、cruise はマイルストーン単位、ship は breakdown 済みの PR 単位で autopilot を回す。役割を分離しているため、cruise は breakdown.md を見ない。ship は各 PR の autopilot 完了後に `reviewer` + `ai-antipattern-reviewer` を並列起動し、受け入れ基準の充足と先行 PR との統合を PR 単位で確認する（autopilot 内部のタスク単位レビューとは角度を変えた最小ゲート）。`REQUEST_CHANGES` なら autopilot を最大 2 回まで再実行する。
 
+### dispatch（単発タスク用、autopilot + 2 レビュー）
+
+roadmap / breakdown に依存しない単発リクエスト用。autopilot で実装したあと、ship と同じく `reviewer` + `ai-antipattern-reviewer` を並列起動して最小レビューゲートを通す。受け入れ基準はユーザーの依頼内容そのものとして扱う。`REQUEST_CHANGES` なら autopilot を最大 2 回まで再実行する。ship との違いは PR/マイルストーンのチェック管理を持たない点のみ。
+
 ### brainstorm
 
 純粋な発散用のシングルエージェントスキル。サブエージェント連鎖はなし。
@@ -109,7 +113,7 @@ Phase 4 で planner が `complexity: high` を付けたタスクは Task の `mo
 | イベント           | スクリプト             | 役割                                                                                       |
 | ------------------ | ---------------------- | ------------------------------------------------------------------------------------------ |
 | `PreCompact`       | `pre-compact-hook.mjs` | コンテキスト圧縮前に現在の autopilot 状態を `systemMessage` で再注入し、フェーズ継続を促す |
-| `UserPromptSubmit` | `keyword-detector.mjs` | `autopilot/spec/roadmap/cruise/brainstorm` 等のキーワードを検出し、対応スキルを強制起動    |
+| `UserPromptSubmit` | `keyword-detector.mjs` | `autopilot/dispatch/spec/roadmap/cruise/ship/brainstorm` 等のキーワードを検出し、対応スキルを強制起動 |
 | `Stop`             | `stop-hook.mjs`        | `state.active=true` の間は Stop をブロックし、ワークフロー完走を強制                       |
 
 `keyword-detector.mjs` はコードブロックを除去してからマッチし、既に `/belt:` で明示起動された場合は二重起動を避ける。
