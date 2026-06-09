@@ -27,7 +27,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `Analyst → Architect+Planner → Critic → Executor(並列) → QA(Test+Debugger) → Reviewer×3` を順に回し、各フェーズの入出力を `.belt/phases/` にファイル保存しながら進む。Critic の REJECT、Reviewer の REQUEST_CHANGES、QA 失敗時はリトライし、QA が 2 回失敗すると Architect の根本原因診断を経て Phase 1 から全体リトライ（最大 2 回）。
 
-### spec → spec-confirm → roadmap → (breakdown) → cruise（大規模タスク用）
+### spec → spec-confirm → roadmap → 実行（大規模タスク用）
 
 人間レビューポイントを挟む段階的ワークフロー:
 
@@ -37,8 +37,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 4. ユーザーが `spec.md` を確認
 5. `/belt:roadmap` — `.belt/spec.md` の全要件を入力に、Architect→Planner→Critic でマイルストーン分解、`.belt/roadmap.md` へ
 6. ユーザーがロードマップを確認
-7. （任意）`/belt:breakdown [v0.X]` — 指定マイルストーン（省略時は最初の未完了マイルストーン）を Planner+Critic で「1 PR 粒度」まで分解し、`.belt/breakdown.md` へ。JIT 方式で1マイルストーンずつ実行する
-8. `/belt:cruise` — `.belt/breakdown.md` があれば **PR 単位** で autopilot を回し完了後にマイルストーンを一括チェック、無ければ従来通り **マイルストーン単位** で autopilot を回す。途中再開可能
+7. 実装の進め方を 2 通りから選ぶ:
+   - マイルストーン単位: `/belt:cruise` — roadmap.md の未完了マイルストーンを先頭から autopilot で回し、完了タスクをチェックしていく。途中再開可能
+   - PR 単位（JIT）: `/belt:breakdown [v0.X]`（指定マイルストーン、省略時は最初の未完了）を Planner+Critic で「1 PR 粒度」に分解 `.belt/breakdown.md` へ → `/belt:ship` で PR を 1 つずつ autopilot で実装し、全 PR 完了でマイルストーンを一括チェック + breakdown.md を削除。1 マイルストーンずつ分解→消化を繰り返す
+
+cruise と ship はどちらも未完了マイルストーンを進めるが、cruise はマイルストーン単位、ship は breakdown 済みの PR 単位で autopilot を回す。役割を分離しているため、cruise は breakdown.md を見ない。
 
 ### brainstorm
 

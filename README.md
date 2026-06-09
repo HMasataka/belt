@@ -37,24 +37,32 @@ Claude Code 用の最小構成オートパイロットプラグイン。
 # spec.md の内容を確認
 /belt:roadmap                      # ロードマップを生成 → .belt/roadmap.md
 # roadmap.md の内容を確認
-/belt:breakdown [v0.X]             # （任意）1マイルストーンを 1 PR 粒度に分解 → .belt/breakdown.md
+
+# --- 実装の進め方は 2 通り ---
+
+# A. マイルストーン単位で進める
+/belt:cruise                       # 未完了マイルストーンを順に autopilot 実行
+
+# B. PR 単位（JIT）で進める
+/belt:breakdown [v0.X]             # 1マイルストーンを 1 PR 粒度に分解 → .belt/breakdown.md
 # breakdown.md の内容を確認
-/belt:cruise                       # breakdown.md があれば PR 単位、無ければマイルストーン単位で autopilot 実行
+/belt:ship                         # breakdown.md の PR を 1 つずつ autopilot 実行
 ```
 
-`/belt:breakdown` は省略可能で、ロードマップのマイルストーンをそのまま autopilot に渡したい場合は不要です。マイルストーンが大きすぎる場合に挟むと、1 PR で提出して違和感がない粒度に細分化されます。
+実装フェーズは 2 通りから選べます。マイルストーンをそのまま流すなら `/belt:cruise`。マイルストーンが大きい場合は `/belt:breakdown` で 1 PR で提出して違和感がない粒度に細分化し、`/belt:ship` で PR を 1 つずつ消化します。
 
 ## スキル一覧
 
-| スキル      | 説明                                                                 |
-| ----------- | -------------------------------------------------------------------- |
-| `autopilot` | 分析・設計・計画・実装・QA・レビューの6フェーズを一括実行            |
-| `spec`      | 要件分析を行い、チェックボックス付き仕様ドラフトを `.belt/spec.draft.md` に出力 |
-| `spec-confirm` | `spec.draft.md` のチェック済み要件のみを `.belt/spec.md` に出力 |
-| `roadmap`   | `spec.md` からマイルストーン付きロードマップを生成 |
-| `breakdown` | `roadmap.md` の1マイルストーンを 1 PR 粒度に分解し `.belt/breakdown.md` に出力 |
-| `cruise`    | `breakdown.md` があれば PR 単位、無ければマイルストーン単位で autopilot を実行するループ |
-| `brainstorm`| アイデアを大量に発散させる壁打ち相手。名前決め・機能案など何でも     |
+| スキル         | 説明                                                                                        |
+| -------------- | ------------------------------------------------------------------------------------------- |
+| `autopilot`    | 分析・設計・計画・実装・QA・レビューの6フェーズを一括実行                                   |
+| `spec`         | 要件分析を行い、チェックボックス付き仕様ドラフトを `.belt/spec.draft.md` に出力             |
+| `spec-confirm` | `spec.draft.md` のチェック済み要件のみを `.belt/spec.md` に出力                             |
+| `roadmap`      | `spec.md` からマイルストーン付きロードマップを生成                                          |
+| `breakdown`    | `roadmap.md` の1マイルストーンを 1 PR 粒度に分解し `.belt/breakdown.md` に出力              |
+| `cruise`       | `roadmap.md` のマイルストーンを順に autopilot で実行するループ                              |
+| `ship`         | `breakdown.md` の PR を 1 つずつ autopilot で実行し、完了マイルストーンをチェックするループ |
+| `brainstorm`   | アイデアを大量に発散させる壁打ち相手。名前決め・機能案など何でも                            |
 
 ## エージェント一覧
 
@@ -121,7 +129,7 @@ flowchart TD
     P6 -->|OK| Done([完了])
 ```
 
-### spec → spec-confirm → roadmap → (breakdown) → cruise
+### spec → spec-confirm → roadmap → 実装（cruise / breakdown+ship）
 
 大規模タスクを段階的に進めるワークフローです。
 各スキルの間に人間のレビューポイントがあります。
@@ -132,9 +140,9 @@ flowchart TD
 1. **人間のレビュー** — spec.md の内容を確認
 1. **roadmap** — spec.md の全要件から Architect が設計、Planner がマイルストーンに分解、Critic がレビュー、`.belt/roadmap.md` に出力
 1. **人間のレビュー** — roadmap.md の内容を確認
-1. **breakdown（任意）** — 指定マイルストーン（省略時は最初の未完了マイルストーン）を Planner+Critic で 1 PR 粒度に分解し、`.belt/breakdown.md` に出力。JIT 方式で 1 マイルストーンずつ実行する
-1. **人間のレビュー** — breakdown.md の内容を確認
-1. **cruise** — `breakdown.md` があれば PR 単位で autopilot を実行（完了で breakdown.md のチェック更新、全 PR 完了で roadmap.md のマイルストーンを一括チェック）、無ければマイルストーン単位で autopilot を順次実行。中断後も `/belt:cruise` で再開可能
+1. **実装** — 2 通りの進め方から選ぶ:
+   - cruise（マイルストーン単位） — roadmap.md の未完了マイルストーンを順に autopilot で実行。中断後も `/belt:cruise` で再開可能
+   - breakdown + ship（PR 単位 / JIT） — breakdown で指定マイルストーン（省略時は最初の未完了）を Planner+Critic で 1 PR 粒度に分解し `.belt/breakdown.md` に出力 → 人間がレビュー → ship で PR を 1 つずつ autopilot で実行（完了で breakdown.md のチェック更新、全 PR 完了で roadmap.md のマイルストーンを一括チェック + breakdown.md 削除）。1 マイルストーンずつ分解→消化を繰り返す
 
 ```mermaid
 flowchart TD
@@ -182,25 +190,28 @@ flowchart TD
         B3 -->|ACCEPT| B4["breakdown 生成<br>.belt/breakdown.md"]
     end
 
-    Human2 --> B1
-    Human2 --> C1
+    Human2 -->|マイルストーン単位| C1
+    Human2 -->|PR 単位| B1
     B4 --> Human3{{"人間がレビュー<br>PR 分解を確認"}}
-    Human3 --> C1
+    Human3 --> SH1
 
-    subgraph cruise ["/cruise"]
+    subgraph cruise ["/cruise（マイルストーン単位）"]
         C1["roadmap.md 読み込み"]
-        C1 --> CMode{"breakdown.md<br>あり?"}
-        CMode -->|Yes| CP1{"未チェック PR<br>あり?"}
-        CP1 -->|Yes| CP2["autopilot 実行<br>(PR 単位)"]
-        CP2 --> CP3["breakdown.md<br>チェック更新"]
-        CP3 --> CP1
-        CP1 -->|No| CP4["roadmap.md の<br>マイルストーンを一括チェック<br>+ breakdown.md 削除"]
-        CP4 --> CMS([次の breakdown を促し終了])
-        CMode -->|No| C2{"未完了マイルストーン<br>あり?"}
+        C1 --> C2{"未完了マイルストーン<br>あり?"}
         C2 -->|Yes| C3["autopilot 実行<br>(マイルストーン単位)"]
         C3 --> C4["roadmap.md<br>チェック更新"]
-        C4 --> CMode
+        C4 --> C2
         C2 -->|No| C5([cruise 完了])
+    end
+
+    subgraph ship ["/ship（PR 単位）"]
+        SH1["breakdown.md 読み込み"]
+        SH1 --> SP1{"未チェック PR<br>あり?"}
+        SP1 -->|Yes| SP2["autopilot 実行<br>(PR 単位)"]
+        SP2 --> SP3["breakdown.md<br>チェック更新"]
+        SP3 --> SP1
+        SP1 -->|No| SP4["roadmap.md の<br>マイルストーンを一括チェック<br>+ breakdown.md 削除"]
+        SP4 --> SMS([次の breakdown を促し終了])
     end
 ```
 

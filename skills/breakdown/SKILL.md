@@ -182,5 +182,5 @@ Task(
 ```text
 `.belt/breakdown.md` に v0.X の PR 分解を出力しました。
 
-内容を確認し、`/belt:cruise` を実行すると PR 単位で autopilot による実装が開始されます。
+内容を確認し、`/belt:ship` を実行すると PR 単位で autopilot による実装が開始されます。
 ```

@@ -6,6 +6,7 @@ const KEYWORDS = [
   { name: "spec", pattern: /\b(spec|仕様書?)(?!\.)\b/i },
   { name: "roadmap", pattern: /\b(roadmap|ロードマップ)(?!\.)\b/i },
   { name: "cruise", pattern: /\b(cruise|クルーズ)(?!\.)\b/i },
+  { name: "ship", pattern: /\b(ship)(?!\.)\b|PR消化|PRを消化|出荷/i },
   { name: "breakdown", pattern: /\b(breakdown)(?!\.)\b|PR分解|タスク分解|ブレークダウン/i },
   { name: "brainstorm", pattern: /\b(brainstorm|ブレスト|壁打ち)(?!\.)\b/i },
 ];
