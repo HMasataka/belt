@@ -61,7 +61,7 @@ Claude Code 用の最小構成オートパイロットプラグイン。
 | `roadmap`      | `spec.md` からマイルストーン付きロードマップを生成                                          |
 | `breakdown`    | `roadmap.md` の1マイルストーンを 1 PR 粒度に分解し `.belt/breakdown.md` に出力              |
 | `cruise`       | `roadmap.md` のマイルストーンを順に autopilot で実行するループ                              |
-| `ship`         | `breakdown.md` の PR を 1 つずつ autopilot で実行し、完了マイルストーンをチェックするループ |
+| `ship`         | `breakdown.md` の PR を 1 つずつ autopilot で実行し、reviewer + ai-antipattern-reviewer の最小レビューを通して完了マイルストーンをチェックするループ |
 | `brainstorm`   | アイデアを大量に発散させる壁打ち相手。名前決め・機能案など何でも                            |
 
 ## エージェント一覧
@@ -142,7 +142,7 @@ flowchart TD
 1. **人間のレビュー** — roadmap.md の内容を確認
 1. **実装** — 2 通りの進め方から選ぶ:
    - cruise（マイルストーン単位） — roadmap.md の未完了マイルストーンを順に autopilot で実行。中断後も `/belt:cruise` で再開可能
-   - breakdown + ship（PR 単位 / JIT） — breakdown で指定マイルストーン（省略時は最初の未完了）を Planner+Critic で 1 PR 粒度に分解し `.belt/breakdown.md` に出力 → 人間がレビュー → ship で PR を 1 つずつ autopilot で実行（完了で breakdown.md のチェック更新、全 PR 完了で roadmap.md のマイルストーンを一括チェック + breakdown.md 削除）。1 マイルストーンずつ分解→消化を繰り返す
+   - breakdown + ship（PR 単位 / JIT） — breakdown で指定マイルストーン（省略時は最初の未完了）を Planner+Critic で 1 PR 粒度に分解し `.belt/breakdown.md` に出力 → 人間がレビュー → ship で PR を 1 つずつ autopilot で実行し、reviewer + ai-antipattern-reviewer の最小レビュー（受け入れ基準の充足・統合の破綻を確認）を通してから checkoff（完了で breakdown.md のチェック更新、全 PR 完了で roadmap.md のマイルストーンを一括チェック + breakdown.md 削除）。1 マイルストーンずつ分解→消化を繰り返す
 
 ```mermaid
 flowchart TD
@@ -208,7 +208,11 @@ flowchart TD
         SH1["breakdown.md 読み込み"]
         SH1 --> SP1{"未チェック PR<br>あり?"}
         SP1 -->|Yes| SP2["autopilot 実行<br>(PR 単位)"]
-        SP2 --> SP3["breakdown.md<br>チェック更新"]
+        SP2 --> SPR{"reviewer +<br>ai-antipattern-reviewer<br>最小レビュー"}
+        SPR -->|REQUEST_CHANGES| SPRR{"リトライ<br>2回目?"}
+        SPRR -->|No| SP2
+        SPRR -->|Yes| SPE([未解決指摘を報告し終了])
+        SPR -->|APPROVE / COMMENT| SP3["breakdown.md<br>チェック更新"]
         SP3 --> SP1
         SP1 -->|No| SP4["roadmap.md の<br>マイルストーンを一括チェック<br>+ breakdown.md 削除"]
         SP4 --> SMS([次の breakdown を促し終了])
