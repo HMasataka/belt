@@ -74,10 +74,12 @@ autopilot が完了した PR を、マージ前提の単位として最小レビ
    ## PR
 
    ## PR-N: タイトル
+
    **スコープ**: ...
    **受け入れ基準**:
+
    - ...
-   **依存**: ...
+     **依存**: ...
 
    ## アーキテクチャ方針
 
@@ -102,7 +104,7 @@ autopilot が完了した PR を、マージ前提の単位として最小レビ
    作業結果を `.belt/phases/outputs/ship-reviewer-i{iteration}.md` に Write ツールで保存してください。
    ```
 
-   `.belt/phases/prompts/ship-antipattern-i{iteration}.md` も同じ構造で作成し、タスクを「AI 生成コード特有のアンチパターン（幻覚 API、スコープクリープ、デッドコード、フォールバック濫用、不要な後方互換対応）を検出する」に差し替え、出力先を `.belt/phases/outputs/ship-antipattern-i{iteration}.md` にする。
+   `.belt/phases/prompts/ship-antipattern-i{iteration}.md` も同じ構造で作成し、タスクを「AI 生成のコード・コメント・ドキュメント特有のアンチパターンを検出する（コード: 幻覚 API、スコープクリープ、デッドコード、フォールバック濫用、不要な後方互換対応 / コメント: What・How の説明コメント、自明なコメント、経緯コメント、コメントアウト残骸 / ドキュメント: 無駄な強調、歴史的経緯にひっぱられた記載、現状と矛盾する旧記述、AI 臭）」に差し替え、出力先を `.belt/phases/outputs/ship-antipattern-i{iteration}.md` にする。変更内容の参照に PR で追加・改修したドキュメントが含まれる場合はそれも対象とする。
 
 3. **並列起動**: 2 つの Task を 1 メッセージ内で並列起動する。
 
@@ -112,7 +114,6 @@ autopilot が完了した PR を、マージ前提の単位として最小レビ
    ```
 
 4. **ルーティング**（両出力の最終行のステータスタグで機械的に判定する）:
-
    - 両方が `[STATUS:APPROVE]` または `[STATUS:COMMENT]`: レビュー通過。Edit ツールで `.belt/breakdown.md` の該当 PR セクションのチェックボックスを `- [x]` に変更し、Step 2 の先頭に戻る（COMMENT はマイルストーン完了時のサマリーに含める）。
    - いずれかが `[STATUS:REQUEST_CHANGES]`: 修正のため autopilot を再実行する。Step 2 の autopilot 呼び出しの args 末尾にレビュー指摘への参照（`.belt/phases/outputs/ship-reviewer-i{iteration}.md` と `ship-antipattern-i{iteration}.md` を Read して反映するよう指示）を追加して再実行し、完了後この Step 3 を `iteration` を進めて再レビューする。リトライは最大 2 回。リトライ時、レビューアは前回出力を参照に追加して finding_id を `new / persists / resolved` で追跡する。2 回リトライしても `REQUEST_CHANGES` が残る場合、未解決の指摘をユーザーに提示し、`status="error"`, `active=false` で終了する。
 
