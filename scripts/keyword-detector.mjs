@@ -2,6 +2,7 @@
 
 const KEYWORDS = [
   { name: "autopilot", pattern: /\b(autopilot|auto[\s-]?pilot)\b(?!\.)/i },
+  { name: "spec-confirm", pattern: /\b(spec[\s-]?confirm)(?!\.)\b|仕様(書?を?)?確定/i },
   { name: "spec", pattern: /\b(spec|仕様書?)(?!\.)\b/i },
   { name: "roadmap", pattern: /\b(roadmap|ロードマップ)(?!\.)\b/i },
   { name: "cruise", pattern: /\b(cruise|クルーズ)(?!\.)\b/i },

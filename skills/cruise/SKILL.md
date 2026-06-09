@@ -20,7 +20,7 @@ argument-hint: ""
 
 Read ツールで `.belt/roadmap.md` を読み込む。
 
-ファイルが存在しない場合、ユーザーに「先に `/belt:spec` → `/belt:roadmap` を実行してください」と案内して終了する。
+ファイルが存在しない場合、ユーザーに「先に `/belt:spec` → `/belt:spec-confirm` → `/belt:roadmap` を実行してください」と案内して終了する。
 
 先頭の「アーキテクチャ方針」セクションを抽出して保持する。これは各 autopilot 実行時にコンテキストとして渡す。
 

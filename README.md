@@ -31,8 +31,10 @@ Claude Code 用の最小構成オートパイロットプラグイン。
 各ステップの間で人間がレビュー・取捨選択できます。
 
 ```claude
-/belt:spec <プロジェクトの説明>    # 仕様書を生成 → .belt/spec.md
-# spec.md のチェックボックスで採用する要件を選択
+/belt:spec <プロジェクトの説明>    # 仕様ドラフトを生成 → .belt/spec.draft.md
+# spec.draft.md のチェックボックスで採用する要件を選択
+/belt:spec-confirm                 # チェック済み要件のみを抽出 → .belt/spec.md
+# spec.md の内容を確認
 /belt:roadmap                      # ロードマップを生成 → .belt/roadmap.md
 # roadmap.md の内容を確認
 /belt:breakdown [v0.X]             # （任意）1マイルストーンを 1 PR 粒度に分解 → .belt/breakdown.md
@@ -47,8 +49,9 @@ Claude Code 用の最小構成オートパイロットプラグイン。
 | スキル      | 説明                                                                 |
 | ----------- | -------------------------------------------------------------------- |
 | `autopilot` | 分析・設計・計画・実装・QA・レビューの6フェーズを一括実行            |
-| `spec`      | 要件分析を行い、チェックボックス付き仕様書を `.belt/spec.md` に出力  |
-| `roadmap`   | `spec.md` のチェック済み要件からマイルストーン付きロードマップを生成 |
+| `spec`      | 要件分析を行い、チェックボックス付き仕様ドラフトを `.belt/spec.draft.md` に出力 |
+| `spec-confirm` | `spec.draft.md` のチェック済み要件のみを `.belt/spec.md` に出力 |
+| `roadmap`   | `spec.md` からマイルストーン付きロードマップを生成 |
 | `breakdown` | `roadmap.md` の1マイルストーンを 1 PR 粒度に分解し `.belt/breakdown.md` に出力 |
 | `cruise`    | `breakdown.md` があれば PR 単位、無ければマイルストーン単位で autopilot を実行するループ |
 | `brainstorm`| アイデアを大量に発散させる壁打ち相手。名前決め・機能案など何でも     |
@@ -118,14 +121,16 @@ flowchart TD
     P6 -->|OK| Done([完了])
 ```
 
-### spec → roadmap → (breakdown) → cruise
+### spec → spec-confirm → roadmap → (breakdown) → cruise
 
 大規模タスクを段階的に進めるワークフローです。
 各スキルの間に人間のレビューポイントがあります。
 
-1. **spec** — Analyst と Architect が要件を分析、AskUserQuestion で深掘り、チェックボックス付き仕様書を `.belt/spec.md` に出力
-1. **人間のレビュー** — spec.md のチェックボックスで採用する要件を選択
-1. **roadmap** — チェック済み要件から Architect が設計、Planner がマイルストーンに分解、Critic がレビュー、`.belt/roadmap.md` に出力
+1. **spec** — Analyst と Architect が要件を分析、AskUserQuestion で深掘り、チェックボックス付き仕様ドラフトを `.belt/spec.draft.md` に出力
+1. **人間のレビュー** — spec.draft.md のチェックボックスで採用する要件を選択
+1. **spec-confirm** — spec.draft.md に残る Open Questions を AskUserQuestion で解消して要件に反映したうえで、チェック済み要件のみを抽出し、チェックボックスなしの仕様ドキュメントを `.belt/spec.md` に出力
+1. **人間のレビュー** — spec.md の内容を確認
+1. **roadmap** — spec.md の全要件から Architect が設計、Planner がマイルストーンに分解、Critic がレビュー、`.belt/roadmap.md` に出力
 1. **人間のレビュー** — roadmap.md の内容を確認
 1. **breakdown（任意）** — 指定マイルストーン（省略時は最初の未完了マイルストーン）を Planner+Critic で 1 PR 粒度に分解し、`.belt/breakdown.md` に出力。JIT 方式で 1 マイルストーンずつ実行する
 1. **人間のレビュー** — breakdown.md の内容を確認
@@ -136,13 +141,24 @@ flowchart TD
     subgraph spec ["/spec"]
         S1["Analyst<br>要件分析"] --> S2["Architect<br>技術調査"]
         S2 --> S3["AskUserQuestion<br>深掘り・提案"]
-        S3 --> S4["仕様書生成<br>.belt/spec.md"]
+        S3 --> S4["仕様ドラフト生成<br>.belt/spec.draft.md"]
     end
 
     S4 --> Human1{{"人間がレビュー<br>チェックボックスで<br>要件を選択"}}
 
+    subgraph specConfirm ["/spec-confirm"]
+        SC0["spec.draft.md 読み込み"]
+        SC0 --> SC1{"Open Questions<br>あり?"}
+        SC1 -->|Yes| SC1a["AskUserQuestion で解消<br>結論を要件に反映<br>spec.draft.md 更新"]
+        SC1a --> SC1
+        SC1 -->|No| SC2["チェック済み項目を抽出<br>spec.md 生成<br>.belt/spec.md"]
+    end
+
+    Human1 --> SC0
+    SC2 --> Human1b{{"人間がレビュー<br>spec.md を確認"}}
+
     subgraph roadmap ["/roadmap"]
-        R1["spec.md 読み込み<br>チェック済み項目のみ抽出"]
+        R1["spec.md 読み込み<br>全要件を抽出"]
         R1 --> R2["Architect<br>アーキテクチャ設計"]
         R2 --> R3["Planner<br>マイルストーン分解"]
         R3 --> R4{"Critic<br>レビュー"}
@@ -152,7 +168,7 @@ flowchart TD
         R4 -->|ACCEPT| R5["ロードマップ生成<br>.belt/roadmap.md"]
     end
 
-    Human1 --> R1
+    Human1b --> R1
 
     R5 --> Human2{{"人間がレビュー<br>内容を確認"}}
 

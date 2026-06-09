@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `.claude-plugin/`   | プラグインメタデータ（plugin.json, marketplace.json）                                |
 | `.mcp.json`         | belt MCP サーバーの登録                                                              |
 
-ランタイムの作業ディレクトリは利用者プロジェクト側であり、プラグインは利用者プロジェクトに `.belt/` を作って状態を書き込む（`.belt/state.json`、`.belt/phases/{prompts,outputs}/`、`.belt/spec.md`、`.belt/roadmap.md`、`.belt/breakdown.md`）。
+ランタイムの作業ディレクトリは利用者プロジェクト側であり、プラグインは利用者プロジェクトに `.belt/` を作って状態を書き込む（`.belt/state.json`、`.belt/phases/{prompts,outputs}/`、`.belt/spec.draft.md`、`.belt/spec.md`、`.belt/roadmap.md`、`.belt/breakdown.md`）。
 
 ## 主要ワークフロー
 
@@ -27,16 +27,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `Analyst → Architect+Planner → Critic → Executor(並列) → QA(Test+Debugger) → Reviewer×3` を順に回し、各フェーズの入出力を `.belt/phases/` にファイル保存しながら進む。Critic の REJECT、Reviewer の REQUEST_CHANGES、QA 失敗時はリトライし、QA が 2 回失敗すると Architect の根本原因診断を経て Phase 1 から全体リトライ（最大 2 回）。
 
-### spec → roadmap → (breakdown) → cruise（大規模タスク用）
+### spec → spec-confirm → roadmap → (breakdown) → cruise（大規模タスク用）
 
 人間レビューポイントを挟む段階的ワークフロー:
 
-1. `/belt:spec` — Analyst+Architect が要件を分析し、チェックボックス付き仕様書を `.belt/spec.md` へ
+1. `/belt:spec` — Analyst+Architect が要件を分析し、チェックボックス付き仕様ドラフトを `.belt/spec.draft.md` へ
 2. ユーザーが採用要件にチェック
-3. `/belt:roadmap` — チェック済み要件のみを抽出、Architect→Planner→Critic でマイルストーン分解、`.belt/roadmap.md` へ
-4. ユーザーがロードマップを確認
-5. （任意）`/belt:breakdown [v0.X]` — 指定マイルストーン（省略時は最初の未完了マイルストーン）を Planner+Critic で「1 PR 粒度」まで分解し、`.belt/breakdown.md` へ。JIT 方式で1マイルストーンずつ実行する
-6. `/belt:cruise` — `.belt/breakdown.md` があれば **PR 単位** で autopilot を回し完了後にマイルストーンを一括チェック、無ければ従来通り **マイルストーン単位** で autopilot を回す。途中再開可能
+3. `/belt:spec-confirm` — `spec.draft.md` の Open Questions を AskUserQuestion で解消して要件に反映し、チェック済み要件のみを抽出してチェックボックスなしの仕様ドキュメントを `.belt/spec.md` へ。`spec.md` は確定済みなので Open Questions を残さない
+4. ユーザーが `spec.md` を確認
+5. `/belt:roadmap` — `.belt/spec.md` の全要件を入力に、Architect→Planner→Critic でマイルストーン分解、`.belt/roadmap.md` へ
+6. ユーザーがロードマップを確認
+7. （任意）`/belt:breakdown [v0.X]` — 指定マイルストーン（省略時は最初の未完了マイルストーン）を Planner+Critic で「1 PR 粒度」まで分解し、`.belt/breakdown.md` へ。JIT 方式で1マイルストーンずつ実行する
+8. `/belt:cruise` — `.belt/breakdown.md` があれば **PR 単位** で autopilot を回し完了後にマイルストーンを一括チェック、無ければ従来通り **マイルストーン単位** で autopilot を回す。途中再開可能
 
 ### brainstorm
 

@@ -1,12 +1,12 @@
 ---
 name: spec
-description: 要件分析を行い、チェックボックス付きの仕様書を .belt/spec.md に出力する
+description: 要件分析を行い、チェックボックス付きの仕様ドラフトを .belt/spec.draft.md に出力する
 argument-hint: "<タスクの説明>"
 ---
 
 ## 手順
 
-ユーザーのリクエストを分析し、人間がレビュー可能なチェックボックス付き仕様書を `.belt/spec.md` に出力する。
+ユーザーのリクエストを分析し、人間がレビュー可能なチェックボックス付きの仕様ドラフトを `.belt/spec.draft.md` に出力する。
 
 起動時に Bash ツールで `mkdir -p .belt/phases/prompts .belt/phases/outputs` を実行してディレクトリを作成する。
 
@@ -70,16 +70,16 @@ Task(
 
 ---
 
-### Step 4: 仕様書の生成
+### Step 4: 仕様ドラフトの生成
 
-`.belt/phases/outputs/analyst.md` と `.belt/phases/outputs/architect.md` を Read ツールで読み込み、Step 3 のユーザーの回答と統合し、以下のフォーマットで `.belt/spec.md` に Write ツールで書き出す。
+`.belt/phases/outputs/analyst.md` と `.belt/phases/outputs/architect.md` を Read ツールで読み込み、Step 3 のユーザーの回答と統合し、以下のフォーマットで `.belt/spec.draft.md` に Write ツールで書き出す。
 
 機能要件・非機能要件・エッジケース・リスクの各セクションの項目は未チェック (`- [ ]`) で出力する。Open Questions は採否を選ぶものではなく未解決事項を残しておくためのメモなので、チェックボックスではなく素のリスト (`-`) で出力する。analyst の出力から機能要件・非機能要件・エッジケースを、architect の出力から技術コンテキスト・制約を抽出して整理する。
 
 出力フォーマット:
 
 ```markdown
-# 仕様: {タスク名}
+# 仕様ドラフト: {タスク名}
 
 ## 技術コンテキスト
 
@@ -110,10 +110,10 @@ Task(
 
 ### Step 5: 案内
 
-仕様書の出力が完了したら、ユーザーに以下を案内して終了する:
+仕様ドラフトの出力が完了したら、ユーザーに以下を案内して終了する:
 
 ```text
-`.belt/spec.md` に仕様書を出力しました。
+`.belt/spec.draft.md` に仕様ドラフトを出力しました。
 
-採用する要件にチェック (`- [x]`) を入れてから `/roadmap` を実行してください。
+採用する要件にチェック (`- [x]`) を入れてから `/spec-confirm` を実行すると、チェック済み要件のみを `.belt/spec.md` に書き出します。
 ```
