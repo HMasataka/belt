@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## このリポジトリの性質
 
-`belt` は Claude Code プラグイン本体である。アプリケーションコードではなく、Claude Code に対する **エージェント定義 / スキル / フック / MCP サーバー** の集合体。プラグインは `.claude-plugin/marketplace.json` で公開され、`/plugin install belt@HMasataka-belt` でインストールされる。
+`belt` は Claude Code プラグイン本体である。アプリケーションコードではなく、Claude Code に対する **エージェント定義 / スキル / フック / MCP サーバー** の集合体。プラグインは `.claude-plugin/marketplace.json` で公開され、`/plugin marketplace add HMasataka/belt` でマーケットプレイスを登録したのち `/plugin install belt@belt` でインストールされる（マーケットプレイス名・プラグイン名はどちらも `marketplace.json` の `name` = `belt`）。
 
 開発時は手元のリポジトリそのものをプラグインとして読み込んで動かす。ビルド工程はなく、ファイルを編集すれば次回 Claude Code 起動時に反映される。
 
