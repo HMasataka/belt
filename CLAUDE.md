@@ -39,13 +39,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 6. ユーザーがロードマップを確認
 7. 実装の進め方を 2 通りから選ぶ:
    - マイルストーン単位: `/belt:cruise` — roadmap.md の未完了マイルストーンを先頭から autopilot で回し、完了タスクをチェックしていく。途中再開可能
-   - PR 単位（JIT）: `/belt:breakdown [v0.X]`（指定マイルストーン、省略時は最初の未完了）を Planner+Critic で「1 PR 粒度」に分解 `.belt/breakdown.md` へ → `/belt:ship` で PR を 1 つずつ autopilot で実装し、`reviewer` + `ai-antipattern-reviewer` の最小レビューを通してからチェック、全 PR 完了でマイルストーンを一括チェック + breakdown.md を削除。1 マイルストーンずつ分解→消化を繰り返す
+   - PR 単位（JIT）: `/belt:breakdown [v0.X]`（指定マイルストーン、省略時は最初の未完了）を Planner+Critic で「1 PR 粒度」に分解 `.belt/breakdown.md` へ → `/belt:ship` で PR を 1 つずつ executor で実装し、`reviewer` + `ai-antipattern-reviewer` の最小レビューを通してからチェック、全 PR 完了でマイルストーンを一括チェック + breakdown.md を削除。1 マイルストーンずつ分解→消化を繰り返す
 
-cruise と ship はどちらも未完了マイルストーンを進めるが、cruise はマイルストーン単位、ship は breakdown 済みの PR 単位で autopilot を回す。役割を分離しているため、cruise は breakdown.md を見ない。ship は各 PR の autopilot 完了後に `reviewer` + `ai-antipattern-reviewer` を並列起動し、受け入れ基準の充足と先行 PR との統合を PR 単位で確認する（autopilot 内部のタスク単位レビューとは角度を変えた最小ゲート）。`REQUEST_CHANGES` なら autopilot を最大 2 回まで再実行する。
+cruise と ship はどちらも未完了マイルストーンを進めるが、cruise はマイルストーン単位で autopilot を、ship は breakdown 済みの PR 単位で executor を回す。役割を分離しているため、cruise は breakdown.md を見ない。ship は PR が既に 1 PR 粒度に分解済みであることを前提に実装を executor 1 段に絞り、各 PR の executor 完了後に `reviewer` + `ai-antipattern-reviewer` を並列起動して、受け入れ基準の充足と先行 PR との統合を PR 単位で確認する最小レビューゲートで品質を担保する。`REQUEST_CHANGES` なら executor を最大 2 回まで再実行する。
 
-### dispatch（単発タスク用、autopilot + 2 レビュー）
+### dispatch（単発タスク用、executor + 2 レビュー）
 
-roadmap / breakdown に依存しない単発リクエスト用。autopilot で実装したあと、ship と同じく `reviewer` + `ai-antipattern-reviewer` を並列起動して最小レビューゲートを通す。受け入れ基準はユーザーの依頼内容そのものとして扱う。`REQUEST_CHANGES` なら autopilot を最大 2 回まで再実行する。タスクが大きい場合は autopilot に渡す前に planner で実装単位への分解・順序付けを行い、その計画を autopilot のコンテキストに含める（autopilot 1 回の実行は変えず計画で質を上げる）。ship との違いは PR/マイルストーンのチェック管理を持たない点と、大タスク時に前段 planner を挟む点。
+roadmap / breakdown に依存しない単発リクエスト用。autopilot のような多段オーケストレーションは小タスクには重いため、実装を executor 1 段に絞り、ship と同じく `reviewer` + `ai-antipattern-reviewer` を並列起動して最小レビューゲートを通す。受け入れ基準はユーザーの依頼内容そのものとして扱う。`REQUEST_CHANGES` なら executor を最大 2 回まで再実行する。タスクが大きい場合は executor に渡す前に planner で実装単位への分解・順序付けを行い、その計画を executor のコンテキストに含める。ship との違いは PR/マイルストーンのチェック管理を持たない点と、大タスク時に前段 planner を挟む点。
 
 ### brainstorm
 

@@ -19,10 +19,10 @@ Claude Code 用の最小構成オートパイロットプラグイン。
 
 ```claude
 /belt:autopilot <タスクの内容>   # 6 フェーズで実装
-/belt:dispatch <タスクの内容>    # autopilot + reviewer/ai-antipattern-reviewer の追加レビュー
+/belt:dispatch <タスクの内容>    # executor 実装 + reviewer/ai-antipattern-reviewer の最小レビュー
 ```
 
-`dispatch` は autopilot の実装に、依頼内容を受け入れ基準とした reviewer + ai-antipattern-reviewer の最小レビューゲートを加えた単発タスク版です（roadmap 非依存）。タスクが大きい場合は autopilot に渡す前に planner で実装単位へ分解・順序付けしてから流します。
+`dispatch` は executor 単体の実装に、依頼内容を受け入れ基準とした reviewer + ai-antipattern-reviewer の最小レビューゲートを加えた単発タスク版です（roadmap 非依存）。autopilot のような多段構成は小タスクには重いため実装を 1 段に絞り、品質は後段の 2 レビューで担保します。タスクが大きい場合は executor に渡す前に planner で実装単位へ分解・順序付けしてから流します。
 
 ### 壁打ち・ブレスト
 
@@ -61,13 +61,13 @@ Claude Code 用の最小構成オートパイロットプラグイン。
 | スキル         | 説明                                                                                        |
 | -------------- | ------------------------------------------------------------------------------------------- |
 | `autopilot`    | 分析・設計・計画・実装・QA・レビューの6フェーズを一括実行                                   |
-| `dispatch`     | 単発タスクを（大きい場合は planner で計画してから）autopilot で実装し、reviewer + ai-antipattern-reviewer の最小レビューを通す（roadmap 非依存） |
+| `dispatch`     | 単発タスクを（大きい場合は planner で計画してから）executor で実装し、reviewer + ai-antipattern-reviewer の最小レビューを通す（roadmap 非依存） |
 | `spec`         | 要件分析を行い、チェックボックス付き仕様ドラフトを `.belt/spec.draft.md` に出力             |
 | `spec-confirm` | `spec.draft.md` のチェック済み要件のみを `.belt/spec.md` に出力                             |
 | `roadmap`      | `spec.md` からマイルストーン付きロードマップを生成                                          |
 | `breakdown`    | `roadmap.md` の1マイルストーンを 1 PR 粒度に分解し `.belt/breakdown.md` に出力              |
 | `cruise`       | `roadmap.md` のマイルストーンを順に autopilot で実行するループ                              |
-| `ship`         | `breakdown.md` の PR を 1 つずつ autopilot で実行し、reviewer + ai-antipattern-reviewer の最小レビューを通して完了マイルストーンをチェックするループ |
+| `ship`         | `breakdown.md` の PR を 1 つずつ executor で実装し、reviewer + ai-antipattern-reviewer の最小レビューを通して完了マイルストーンをチェックするループ |
 | `brainstorm`   | アイデアを大量に発散させる壁打ち相手。名前決め・機能案など何でも                            |
 
 ## エージェント一覧
@@ -148,7 +148,7 @@ flowchart TD
 1. **人間のレビュー** — roadmap.md の内容を確認
 1. **実装** — 2 通りの進め方から選ぶ:
    - cruise（マイルストーン単位） — roadmap.md の未完了マイルストーンを順に autopilot で実行。中断後も `/belt:cruise` で再開可能
-   - breakdown + ship（PR 単位 / JIT） — breakdown で指定マイルストーン（省略時は最初の未完了）を Planner+Critic で 1 PR 粒度に分解し `.belt/breakdown.md` に出力 → 人間がレビュー → ship で PR を 1 つずつ autopilot で実行し、reviewer + ai-antipattern-reviewer の最小レビュー（受け入れ基準の充足・統合の破綻を確認）を通してから checkoff（完了で breakdown.md のチェック更新、全 PR 完了で roadmap.md のマイルストーンを一括チェック + breakdown.md 削除）。1 マイルストーンずつ分解→消化を繰り返す
+   - breakdown + ship（PR 単位 / JIT） — breakdown で指定マイルストーン（省略時は最初の未完了）を Planner+Critic で 1 PR 粒度に分解し `.belt/breakdown.md` に出力 → 人間がレビュー → ship で PR を 1 つずつ executor で実装し、reviewer + ai-antipattern-reviewer の最小レビュー（受け入れ基準の充足・統合の破綻を確認）を通してから checkoff（完了で breakdown.md のチェック更新、全 PR 完了で roadmap.md のマイルストーンを一括チェック + breakdown.md 削除）。1 マイルストーンずつ分解→消化を繰り返す
 
 ```mermaid
 flowchart TD
@@ -213,7 +213,7 @@ flowchart TD
     subgraph ship ["/ship（PR 単位）"]
         SH1["breakdown.md 読み込み"]
         SH1 --> SP1{"未チェック PR<br>あり?"}
-        SP1 -->|Yes| SP2["autopilot 実行<br>(PR 単位)"]
+        SP1 -->|Yes| SP2["executor 実装<br>(PR 単位)"]
         SP2 --> SPR{"reviewer +<br>ai-antipattern-reviewer<br>最小レビュー"}
         SPR -->|REQUEST_CHANGES| SPRR{"リトライ<br>2回目?"}
         SPRR -->|No| SP2
