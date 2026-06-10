@@ -81,12 +81,12 @@ v0.X - マイルストーン名
 実装はリポジトリに直接行う。実装した内容の要約（変更ファイルと要点）を `.belt/phases/outputs/ship-executor-i{iteration}.md` に Write ツールで保存してください。
 ```
 
-PR の complexity を判定し、`model` を明示して Task を起動する（複数モジュールにまたがる・設計判断を要するなど難度が高ければ `opus`、それ以外は `sonnet`）:
+`model="opus"` を固定で指定して Task を起動する。ship の executor は autopilot のような上流の分析・設計フェーズを経ずいきなり実装に入るため、判断品質を確保する目的で complexity によらず opus を使う（autopilot 内の executor は上流フェーズがあるため sonnet 既定のまま）:
 
 ```text
 Task(
   subagent_type="belt:executor",
-  model="{complexity が high なら opus、それ以外は sonnet}",
+  model="opus",
   prompt="`.belt/phases/prompts/ship-executor-i{iteration}.md` を Read ツールで読み、指示に従って実装してください。実装した内容の要約を `.belt/phases/outputs/ship-executor-i{iteration}.md` に Write ツールで保存してください。"
 )
 ```
